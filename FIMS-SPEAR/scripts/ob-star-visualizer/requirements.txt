@@ -1,5 +1,3 @@
-io
-os
 numpy
 pandas
 plotly
