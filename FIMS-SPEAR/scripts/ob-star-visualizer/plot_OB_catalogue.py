@@ -19,8 +19,8 @@ from dash import Dash, dcc, html, Input, Output
 # Constants and Data Loading
 # ==================================================
 
-STAR_DATA_FILE = "../ob_catalogue/ob_catalogue.csv"
-SPECTRA_DIR = "../ob_catalogue/ob_catalogue_spectra/"
+STAR_DATA_FILE = "../../ob_catalogue/ob_catalogue.csv"
+SPECTRA_DIR = "../../ob_catalogue/ob_catalogue_spectra/"
 
 # Load star data (Main_ID, m_V, GAL_LON, GAL_LAT, SP_TYPE)
 raw_stars = np.genfromtxt(STAR_DATA_FILE, delimiter=',', dtype='str')
