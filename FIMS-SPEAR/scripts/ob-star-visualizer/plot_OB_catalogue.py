@@ -419,4 +419,4 @@ def update_clicked_star_info(clicked_data):
 # Main
 # ==================================================
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(host='0.0.0.0', port=port, debug=True)
