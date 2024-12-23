@@ -414,6 +414,7 @@ def update_clicked_star_info(clicked_data):
         )
     return "Click on a star to see details here."
 
+port = int(os.environ.get("PORT", 8050))
 
 # ==================================================
 # Main
