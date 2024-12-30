@@ -3,11 +3,13 @@ Author: Cole Meyer
 
 Description:
 This Dash application visualizes distributions of OB-type stars on a galactic map using data from a specified CSV file. Users can interact with the map, select stars, and download their details as a CSV file.
+If running locally, run the following in the command line: "python plot_OB_catalogue.py --local True"
 """
 
 import io
 import os
 
+import argparse
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -22,6 +24,11 @@ STAR_DATA_FILE = "../../ob_catalogue/ob_catalogue.csv"
 SPECTRA_DIR = "../../ob_catalogue/ob_catalogue_spectra/"
 
 scale_spectra = True
+
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Plot OB stars and their corresponding IUE spectra.")
+parser.add_argument('--local', type=bool, help='Running locally?', default=False)
+args = parser.parse_args()
 
 # Load star data (Main_ID, m_V, GAL_LON, GAL_LAT, SP_TYPE)
 raw_stars = np.genfromtxt(STAR_DATA_FILE, delimiter=',', dtype='str')
@@ -421,10 +428,15 @@ def update_clicked_star_info(clicked_data):
         )
     return "Click on a star to see details here."
 
-port = int(os.environ.get("PORT", 8050))
+if not args.local:
+    port = int(os.environ.get("PORT", 8050))
 
 # ==================================================
 # Main
 # ==================================================
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=port, debug=True)
+
+    if args.local:
+        app.run_server(debug=True)
+    else:
+        app.run_server(host='0.0.0.0', port=port, debug=True)
