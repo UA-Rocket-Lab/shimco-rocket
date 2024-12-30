@@ -6,7 +6,7 @@ This Dash application visualizes distributions of OB-type stars on a galactic ma
 """
 
 import io
-from os import listdir
+import os
 
 import numpy as np
 import pandas as pd
@@ -25,7 +25,7 @@ scale_spectra = True
 
 # Load star data (Main_ID, m_V, GAL_LON, GAL_LAT, SP_TYPE)
 raw_stars = np.genfromtxt(STAR_DATA_FILE, delimiter=',', dtype='str')
-spectra_files = listdir(SPECTRA_DIR)
+spectra_files = os.listdir(SPECTRA_DIR)
 spectra_star_names = [file.split('.')[0].replace('_', ' ') for file in spectra_files]
 
 # ==================================================
@@ -284,7 +284,7 @@ def update_bottom_right_plot(clicked_data):
 
         # Format star name to match spectra files
         star_filename = star_name.replace(' ', '_')
-        files = listdir(SPECTRA_DIR)
+        files = os.listdir(SPECTRA_DIR)
         
         if f"{star_filename}.csv" in files:
             star_spectrum = np.genfromtxt(f"{SPECTRA_DIR}{star_filename}.csv", delimiter=',', dtype='float')
