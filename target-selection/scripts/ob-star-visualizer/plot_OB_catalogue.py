@@ -18,8 +18,8 @@ from dash import Dash, dcc, html, Input, Output
 # Constants and Data Loading
 # ==================================================
 
-STAR_DATA_FILE = "../ob_catalogue/ob_catalogue.csv"
-SPECTRA_DIR = "../ob_catalogue/ob_catalogue_spectra/"
+STAR_DATA_FILE = "../../ob_catalogue/ob_catalogue.csv"
+SPECTRA_DIR = "../../ob_catalogue/ob_catalogue_spectra/"
 
 scale_spectra = True
 
