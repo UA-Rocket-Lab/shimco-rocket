@@ -10,18 +10,12 @@ missing spectra are logged for reference.
 
 import argparse
 from astropy.coordinates import SkyCoord
-from astroquery.mast import Observations
 from astropy import units as u
 from astropy.io import fits
 import numpy as np
 import time
 
 ob_stars = np.genfromtxt('../ob_catalogue/ob_catalogue.csv', delimiter=',', dtype='str')
-
-# Parse command-line arguments
-parser = argparse.ArgumentParser(description="Query IUE spectra for OB stars.")
-parser.add_argument('--start_target', type=str, help='Specific target name to process (optional)', default=None)
-args = parser.parse_args()
 
 if args.start_target:
     ob_stars = ob_stars[np.where(ob_stars[:,0] == args.start_target)[0][0]:,:]
