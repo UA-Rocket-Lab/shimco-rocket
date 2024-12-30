@@ -2,10 +2,7 @@
 Author: Cole Meyer
 
 Description:
-This script queries the MAST archive for IUE spectra of OB stars listed
-in a catalog. It retrieves and processes SWP observations, extracts
-wavelength and flux data, and saves the spectra to CSV files. Stars with
-missing spectra are logged for reference.
+This script queries the MAST archive for archival IUE spectra of OB stars using SiMBAD. It retrieves and processes SWP observations, extracts wavelength and flux data, and saves the spectra to CSV files.
 """
 
 import argparse
@@ -24,7 +21,7 @@ parser.add_argument('--start_target', type=str, help='Specific target name to pr
 args = parser.parse_args()
 
 if args.start_target:
-    ob_stars = ob_stars[np.where(ob_stars[:,0] == args.start_target)[0][0]:,:]
+    ob_stars = ob_stars[np.where(ob_stars[:,0] == args.start_target.replace('_',' '))[0][0]:,:]
 
 print('NOTE: takes awhile to run due to MAST query response time')
 t0 = time.time()
@@ -33,10 +30,8 @@ for i, (target_name, gal_lon, gal_lat) in enumerate(zip(ob_stars[:,0], ob_stars[
     if target_name[:3] == 'GEN': # pound symbols are tough to include in CSVs
         target_name = 'GEN#' + target_name[3:]
 
-    coords = SkyCoord(l=float(gal_lon) * u.deg, b=float(gal_lat) * u.deg, frame='galactic')
-    icrs_coords = coords.icrs
-    obs_table = Observations.query_criteria(obs_collection="IUE",
-                                            coordinates=icrs_coords)
+    obs_table = Observations.query_criteria(objectname=target_name,
+                                          obs_collection="IUE")
 
     if np.array(obs_table).shape[0] == 0:
         time_left = (time.time() - t0) * (1 / ((i+1) / len(ob_stars[:,0])) - 1)

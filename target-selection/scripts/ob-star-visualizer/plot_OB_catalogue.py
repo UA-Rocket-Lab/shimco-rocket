@@ -2,12 +2,11 @@
 Author: Cole Meyer
 
 Description:
-This Dash application visualizes distributions of OB-type stars on a galactic map using data from a specified CSV file.
-Users can interact with the map, select stars, and download their details as a CSV file.
+This Dash application visualizes distributions of OB-type stars on a galactic map using data from a specified CSV file. Users can interact with the map, select stars, and download their details as a CSV file.
 """
 
 import io
-import os
+from os import listdir
 
 import numpy as np
 import pandas as pd
@@ -19,16 +18,15 @@ from dash import Dash, dcc, html, Input, Output
 # Constants and Data Loading
 # ==================================================
 
-STAR_DATA_FILE = "../../ob_catalogue/ob_catalogue.csv"
-SPECTRA_DIR = "../../ob_catalogue/ob_catalogue_spectra/"
+STAR_DATA_FILE = "../ob_catalogue/ob_catalogue.csv"
+SPECTRA_DIR = "../ob_catalogue/ob_catalogue_spectra/"
+
+scale_spectra = True
 
 # Load star data (Main_ID, m_V, GAL_LON, GAL_LAT, SP_TYPE)
 raw_stars = np.genfromtxt(STAR_DATA_FILE, delimiter=',', dtype='str')
-spectra_files = os.listdir(SPECTRA_DIR)
+spectra_files = listdir(SPECTRA_DIR)
 spectra_star_names = [file.split('.')[0].replace('_', ' ') for file in spectra_files]
-
-# A sample data file is loaded for determining dimensions needed for later plot operations
-sample_data = pd.read_csv(f"{SPECTRA_DIR}BD+44_1148.csv", header=None).values.astype(float)
 
 # ==================================================
 # Data Preparation
@@ -286,11 +284,20 @@ def update_bottom_right_plot(clicked_data):
 
         # Format star name to match spectra files
         star_filename = star_name.replace(' ', '_')
-        files = os.listdir(SPECTRA_DIR)
+        files = listdir(SPECTRA_DIR)
         
         if f"{star_filename}.csv" in files:
             star_spectrum = np.genfromtxt(f"{SPECTRA_DIR}{star_filename}.csv", delimiter=',', dtype='float')
-            half = int(sample_data.shape[1]/2)
+            if star_spectrum.ndim == 2:
+                half = int(star_spectrum.shape[1]/2)
+            else:
+                half = int(star_spectrum.shape[0]/2)
+
+            if np.logical_and(scale_spectra, star_spectrum.ndim == 2):
+                mean_val = np.mean(star_spectrum[:, half:])
+                for i in range(star_spectrum.shape[0]):
+                    star_spectrum[i, half:] *= mean_val / np.mean(star_spectrum[i, half:])
+
             y_min = np.min(star_spectrum[:, half:] if star_spectrum.ndim == 2 else star_spectrum[half:])
             y_max = np.max(star_spectrum[:, half:] if star_spectrum.ndim == 2 else star_spectrum[half:])
             shaded_regions = [
@@ -414,10 +421,9 @@ def update_clicked_star_info(clicked_data):
         )
     return "Click on a star to see details here."
 
-port = int(os.environ.get("PORT", 8050))
 
 # ==================================================
 # Main
 # ==================================================
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=port, debug=True)
+    app.run_server(debug=True)
