@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colormaps as cm
 import plotly.express as px
 import plotly.graph_objs as go
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State
 
 # ==================================================
 # Constants and Data Loading
@@ -170,6 +170,7 @@ app = Dash(__name__)
 # ==================================================
 
 app.layout = html.Div([
+    dcc.Store(id="stored-n-clicks", data=0),
     dcc.Graph(
         id='scatter-plot',
         figure=main_figure,
@@ -199,8 +200,8 @@ app.layout = html.Div([
     html.Div(
         [
             html.Label(
-                "Show Available Spectra:",
-                style={'fontSize': '20px', 'margin-right': '10px'}
+                "Available Spectra:",
+                style={'fontFamily': 'Arial', 'fontSize': '20px', 'color': '#414141', 'margin-right': '10px'}
             ),
             dcc.Checklist(
                 id='show-spectra-checkbox',
@@ -220,8 +221,8 @@ app.layout = html.Div([
     html.Div(
         [
             html.Label(
-                "Show Background:",
-                style={'fontSize': '20px', 'margin-right': '10px'}
+                "Background:",
+                style={'fontFamily': 'Arial', 'fontSize': '20px', 'color': '#414141', 'margin-right': '10px'}
             ),
             dcc.Checklist(
                 id='show-bg-checkbox',
@@ -273,14 +274,17 @@ app.layout = html.Div([
 # ==================================================
 
 @app.callback(
-    [Output("download-csv", "data"), Output("selected-stars", "children")],
+    [Output("download-csv", "data"), 
+     Output("selected-stars", "children"),
+     Output("stored-n-clicks", "data")],
     [Input("download-btn", "n_clicks"), Input('scatter-plot', 'selectedData')],
+    [State("stored-n-clicks", "data")],
     prevent_initial_call=True
 )
-def download_csv_and_update_textbox(n_clicks, selected_data):
+def download_csv_and_update_textbox(n_clicks, selected_data, stored_n_clicks):
     """Download the selected stars' data as CSV and update the text area with selected stars."""
     if selected_data is None:
-        return None, "Select stars using box select."
+        return None, "Select stars using box select.", stored_n_clicks
 
     points = selected_data['points']
     star_entries = [
@@ -310,21 +314,21 @@ def download_csv_and_update_textbox(n_clicks, selected_data):
         style={"whiteSpace": "pre-wrap", "fontFamily": "monospace"}
     )
 
-    # If the download button is not clicked yet, just update the text
-    if not n_clicks:
-        return None, formatted_text
+    # Only trigger download if button was clicked
+    if n_clicks and n_clicks > stored_n_clicks:
+        buffer = io.StringIO()
+        np.savetxt(buffer, np.array(star_entries[1:], dtype=str), delimiter=",", fmt="%s")
+        csv_content = buffer.getvalue()
+        buffer.close()
 
-    # If the download button is clicked, provide the CSV download
-    buffer = io.StringIO()
-    np.savetxt(buffer, np.array(star_entries[1:], dtype=str), delimiter=",", fmt="%s")
-    csv_content = buffer.getvalue()
-    buffer.close()
+        return {
+            "content": csv_content,
+            "filename": "selected_stars.csv",
+            "type": "text/csv"
+        }, formatted_text, n_clicks
 
-    return {
-        "content": csv_content,
-        "filename": "selected_stars.csv",
-        "type": "text/csv"
-    }, formatted_text
+    # Otherwise, just update the text box
+    return None, formatted_text, stored_n_clicks
 
 
 @app.callback(
