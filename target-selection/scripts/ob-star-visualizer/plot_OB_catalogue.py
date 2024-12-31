@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colormaps as cm
 import plotly.express as px
 import plotly.graph_objs as go
+from astropy.modeling import models, fitting
 from dash import Dash, dcc, html, Input, Output, State
 
 # ==================================================
@@ -26,6 +27,10 @@ STAR_DATA_FILE = "../../ob_catalogue/ob_catalogue.csv"
 SPECTRA_DIR = "../../ob_catalogue/ob_catalogue_spectra/"
 
 scale_spectra = True
+
+model_shape = (180, 360) # (lat, lon)
+arr = np.sin(np.linspace(-np.pi, np.pi, model_shape[0]).reshape(-1, 1)) * \
+    np.cos(np.linspace(-np.pi, np.pi, model_shape[1]))
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description="Plot OB stars and their corresponding IUE spectra.")
@@ -240,6 +245,48 @@ app.layout = html.Div([
         }
     ),
     html.Div(
+        [
+            html.Label(
+                "Normalize Spectra:",
+                style={'fontFamily': 'Arial', 'fontSize': '20px', 'color': '#414141', 'margin-right': '10px'}
+            ),
+            dcc.Checklist(
+                id='norm-spectra-checkbox',
+                options=[{'label': '', 'value': 'norm_spectra'}],
+                value=[],
+                style={'display': 'inline-block'}
+            )
+        ],
+        style={
+            'position': 'absolute',
+            'top': '188px',
+            'right': '55px',
+            'display': 'inline-flex',
+            'alignItems': 'center'
+        }
+    ),
+    html.Div(
+        [
+            html.Label(
+                "Show Continuum Fit:",
+                style={'fontFamily': 'Arial', 'fontSize': '20px', 'color': '#414141', 'margin-right': '10px'}
+            ),
+            dcc.Checklist(
+                id='show-cont-checkbox',
+                options=[{'label': '', 'value': 'show_cont'}],
+                value=[],
+                style={'display': 'inline-block'}
+            )
+        ],
+        style={
+            'position': 'absolute',
+            'top': '221px',
+            'right': '55px',
+            'display': 'inline-flex',
+            'alignItems': 'center'
+        }
+    ),
+    html.Div(
         id='clicked-star-info',
         style={
             'position': 'absolute',
@@ -333,11 +380,21 @@ def download_csv_and_update_textbox(n_clicks, selected_data, stored_n_clicks):
 
 @app.callback(
     Output('bottom-right-plot', 'figure'),
-    [Input('scatter-plot', 'clickData')]
+    [Input('scatter-plot', 'clickData'),
+    Input('norm-spectra-checkbox', 'value'),
+    Input('show-cont-checkbox', 'value')]
 )
-def update_bottom_right_plot(clicked_data):
+def update_bottom_right_plot(clicked_data, norm_spectra_value, show_cont_value):
     """Update the bottom-right plot to show star spectra when a star is clicked."""
-    if clicked_data and 'points' in clicked_data and 'customdata' in clicked_data['points'][0].keys():
+
+    # Logic for readability
+    showing_spectrum = False
+    show_spectrum = clicked_data and 'points' in clicked_data and 'customdata' in clicked_data['points'][0].keys()
+    norm_spectrum = len(norm_spectra_value) != 0
+    show_continuum = len(show_cont_value) != 0
+
+    # Plotting code
+    if norm_spectrum and show_spectrum:
 
         point = clicked_data['points'][0]
         star_name = point['customdata'][0]
@@ -347,13 +404,16 @@ def update_bottom_right_plot(clicked_data):
         files = os.listdir(SPECTRA_DIR)
         
         if f"{star_filename}.csv" in files:
+
+            showing_spectrum = True
+
             star_spectrum = np.genfromtxt(f"{SPECTRA_DIR}{star_filename}.csv", delimiter=',', dtype='float')
             if star_spectrum.ndim == 2:
                 half = int(star_spectrum.shape[1]/2)
             else:
                 half = int(star_spectrum.shape[0]/2)
 
-            if np.logical_and(scale_spectra, star_spectrum.ndim == 2):
+            if star_spectrum.ndim == 2:
                 mean_val = np.mean(star_spectrum[:, half:])
                 for i in range(star_spectrum.shape[0]):
                     star_spectrum[i, half:] *= mean_val / np.mean(star_spectrum[i, half:])
@@ -386,6 +446,8 @@ def update_bottom_right_plot(clicked_data):
                         x=star_spectrum[i, :half],
                         y=star_spectrum[i, half:],
                         mode='lines',
+                        line_color='black',
+                        line_width=2,
                         showlegend=False
                     ) for i in range(star_spectrum.shape[0])
                 ]
@@ -396,6 +458,8 @@ def update_bottom_right_plot(clicked_data):
                         x=star_spectrum[:half],
                         y=star_spectrum[half:],
                         mode='lines',
+                        line_color='black',
+                        line_width=2,
                         showlegend=False
                     )
                 ]
@@ -409,44 +473,152 @@ def update_bottom_right_plot(clicked_data):
                     'title': f'Star: {star_name}'
                 }
             }
-            return figure
-        else:
-            # No spectrum available
-            return {
-                'data': [],
+
+    elif show_spectrum:
+
+        point = clicked_data['points'][0]
+        star_name = point['customdata'][0]
+
+        # Format star name to match spectra files
+        star_filename = star_name.replace(' ', '_')
+        files = os.listdir(SPECTRA_DIR)
+        
+        if f"{star_filename}.csv" in files:
+
+            showing_spectrum = True
+
+            star_spectrum = np.genfromtxt(f"{SPECTRA_DIR}{star_filename}.csv", delimiter=',', dtype='float')
+            if star_spectrum.ndim == 2:
+                half = int(star_spectrum.shape[1]/2)
+            else:
+                half = int(star_spectrum.shape[0]/2)
+
+            y_min = np.min(star_spectrum[:, half:] if star_spectrum.ndim == 2 else star_spectrum[half:])
+            y_max = np.max(star_spectrum[:, half:] if star_spectrum.ndim == 2 else star_spectrum[half:])
+            shaded_regions = [
+                go.Scatter(
+                    x=[1395, 1405, 1405, 1395],
+                    y=[y_min, y_min, y_max, y_max],
+                    fill='toself',
+                    mode='none',
+                    showlegend=False,
+                    fillcolor='rgba(255, 200, 200, 0.5)'
+                ),
+                go.Scatter(
+                    x=[1605, 1615, 1615, 1605],
+                    y=[y_min, y_min, y_max, y_max],
+                    fill='toself',
+                    mode='none',
+                    showlegend=False,
+                    fillcolor='rgba(200, 200, 255, 0.5)'
+                )
+            ]
+
+            if star_spectrum.ndim == 2:
+                # Multiple rows of data (multiple lines)
+                traces = [
+                    go.Scatter(
+                        x=star_spectrum[i, :half],
+                        y=star_spectrum[i, half:],
+                        mode='lines',
+                        line_color='black',
+                        line_width=2,
+                        showlegend=False
+                    ) for i in range(star_spectrum.shape[0])
+                ]
+            else:
+                # Single line of data
+                traces = [
+                    go.Scatter(
+                        x=star_spectrum[:half],
+                        y=star_spectrum[half:],
+                        mode='lines',
+                        line_color='black',
+                        line_width=2,
+                        showlegend=False
+                    )
+                ]
+
+            figure = {
+                'data': traces + shaded_regions,
                 'layout': {
-                    'xaxis': {'visible': False},
-                    'yaxis': {'visible': False},
+                    'xaxis': {'title': 'Wavelength (Å)'},
+                    'yaxis': {'showticklabels': False},
                     'margin': {'l': 10, 'r': 10, 't': 35, 'b': 35},
-                    'title': f'Star: {star_name} (no spectrum available)'
+                    'title': f'Star: {star_name}'
                 }
             }
 
-    # Default empty figure if no star is clicked yet
-    return {
-        'data': [],
-        'layout': {
-            'xaxis': {'visible': False},
-            'yaxis': {'visible': False},
-            'margin': {'l': 10, 'r': 10, 't': 35, 'b': 35},
-            'title': 'Click on a star to see its data'
+    if show_continuum and showing_spectrum:
+
+        masked_regions = ['1150:1265','1375:1425','1515:1675']
+        unmasked_regions = ['0:1150','1265:1375','1425:1515','1675:2000']
+        unmasked_regions = ['1325:2000']
+
+        if star_spectrum.ndim == 2:
+            avg_wav = np.mean(star_spectrum[:, :half], axis=0)
+            avg_flux = np.mean(star_spectrum[:, half:], axis=0)
+        else:
+            avg_wav = star_spectrum[:half]
+            avg_flux = star_spectrum[half:]
+
+        mask = np.ones_like(avg_wav).astype('bool')
+        for region in masked_regions:
+            lims = np.array(region.split(':')).astype('float')
+            mask *= np.invert((lims[0]<avg_wav)&(avg_wav<lims[1]))
+
+        poly_init = models.Chebyshev1D(degree=3)
+        fitter = fitting.LinearLSQFitter()
+        cont_model = fitter(poly_init, avg_wav[mask], avg_flux[mask])
+        cont_flux = cont_model(avg_wav)
+        normalized_flux = avg_flux/cont_flux
+
+        traces.append(
+            go.Scatter(
+                x=avg_wav,
+                y=avg_flux,
+                mode='lines',
+                line_color='red',
+                line_width=2,
+                showlegend=False
+            )
+        )
+        traces.append(
+            go.Scatter(
+                x=avg_wav,
+                y=cont_flux,
+                mode='lines',
+                line_color='blue',
+                line_dash='longdash',
+                line_width=2,
+                showlegend=False
+            )
+        )
+
+    if showing_spectrum:
+
+        figure = {
+            'data': traces + shaded_regions,
+            'layout': {
+                'xaxis': {'title': 'Wavelength (Å)'},
+                'yaxis': {'showticklabels': False},
+                'margin': {'l': 10, 'r': 10, 't': 35, 'b': 35},
+                'title': f'Star: {star_name}'
+            }
         }
-    }
 
-
-# @app.callback(
-#     Output('scatter-plot', 'figure'),
-#     Input('show-spectra-checkbox', 'value')
-# )
-# def update_scatter_plot(show_spectra_value):
-#     """Update the main scatter plot to filter stars that have available spectra if checkbox is selected."""
-#     if 'show' in show_spectra_value:
-#         filtered_data = plot_data[plot_data['Name'].isin(spectra_star_names)]
-#     else:
-#         filtered_data = plot_data
-
-#     updated_fig = create_scatter_figure(filtered_data)
-#     return updated_fig
+        return figure
+    else:
+        # Default empty figure if no star is clicked yet
+        return {
+            'data': [],
+            'layout': {
+                'xaxis': {'visible': False},
+                'yaxis': {'visible': False},
+                'margin': {'l': 10, 'r': 10, 't': 35, 'b': 35},
+                'title': 'Click on a star to see its data'
+            }
+        }
 
 @app.callback(
     Output('scatter-plot', 'figure'),
@@ -463,10 +635,8 @@ def update_scatter_plot_and_bg(show_spectra_value, show_bg_value):
 
     fig = go.Figure()
     if 'show_bg' in show_bg_value:
-        arr = np.sin(np.linspace(-np.pi, np.pi, 180).reshape(-1, 1)) * \
-            np.cos(np.linspace(-np.pi, np.pi, 360))
-        lons = np.linspace(0, 360, 360)
-        lats = np.linspace(-90, 90, 180)
+        lons = np.linspace(0, 360, arr.shape[1])
+        lats = np.linspace(-90, 90, arr.shape[0])
         fig.add_trace(go.Heatmap(
             x=lons,
             y=lats,
