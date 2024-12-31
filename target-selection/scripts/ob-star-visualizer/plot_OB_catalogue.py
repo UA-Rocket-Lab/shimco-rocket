@@ -12,6 +12,8 @@ import os
 import argparse
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib import colormaps as cm
 import plotly.express as px
 import plotly.graph_objs as go
 from dash import Dash, dcc, html, Input, Output
@@ -75,27 +77,27 @@ plot_data["Hover Text"] = plot_data.apply(
 # ==================================================
 def create_scatter_figure(dataframe):
     """Create the main scatter-geo figure for the star map."""
-    fig = px.scatter_geo(
+
+    fig = go.Figure()
+
+    fig.update_layout(
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False),
+        plot_bgcolor='white',  # Set plot background to white
+        paper_bgcolor='white'  # Set outer background to white
+    )
+
+    scatter_fig = px.scatter(
         dataframe,
-        lon="Galactic Longitude",
-        lat="Galactic Latitude",
+        x="Galactic Longitude",
+        y="Galactic Latitude",
         color="Color",
         size="Size",
         custom_data=["Name", "Spectral Type", "Apparent Magnitude"],
-        projection="aitoff",
-        title="SiMBAD OB Star Distribution",
         color_discrete_map=color_map
-    )
-
-    fig.update_geos(
-        showland=False, showcountries=False, showcoastlines=False, showocean=False, showframe=False,
-        projection_scale=1,
-        lonaxis=dict(showgrid=True, gridcolor="lightgray", dtick=30),
-        lataxis=dict(showgrid=True, gridcolor="lightgray", dtick=30),
-        domain=dict(x=[0, 1], y=[0.2, 1])
-    )
-
-    fig.update_traces(marker=dict(sizemode='diameter', sizeref=2.5, sizemin=3))
+        )
+    for trace in scatter_fig.data:
+        fig.add_trace(trace)
 
     fig.update_traces(
         marker=dict(line=dict(width=0)),
@@ -103,12 +105,25 @@ def create_scatter_figure(dataframe):
             "Main_ID: %{customdata[0]}<br>"
             "SP_TYPE: %{customdata[1]}<br>"
             "m_V: %{customdata[2]:.2f}<br>"
-            "GAL_LAT: %{lat:.4f}<br>"
-            "GAL_LON: %{lon:.4f}<extra></extra>"
-        )
+            "GAL_LAT: %{y:.4f}<br>"
+            "GAL_LON: %{x:.4f}<extra></extra>"
+        ),
+        selector=dict(type='scatter')
     )
 
+    for lat_line in range(-90, 91, 30):
+        fig.add_shape(type='line', xref='x', yref='y',
+                    x0=0, x1=360, y0=lat_line, y1=lat_line,
+                    line=dict(color='gray', width=0.5))
+    for lon_line in range(0, 361, 30):
+        fig.add_shape(type='line', xref='x', yref='y',
+                    x0=lon_line, x1=lon_line, y0=-90, y1=90,
+                    line=dict(color='gray', width=0.5))
+
     fig.update_layout(
+        title="SiMBAD OB Stars Visualizer",
+        plot_bgcolor='white',
+        paper_bgcolor='white',
         legend_title=dict(text="Spectral Type"),
         legend=dict(
             font=dict(size=20),
@@ -118,8 +133,8 @@ def create_scatter_figure(dataframe):
             yanchor="top"
         ),
         autosize=False,
-        width=1200,
-        height=800,
+        width=1175,
+        height=650,
         updatemenus=[
             {
                 "buttons": [
@@ -136,6 +151,9 @@ def create_scatter_figure(dataframe):
             }
         ]
     )
+
+    fig.update_xaxes(title="Galactic Longitude (°)",range=[0, 360],ticklabelposition="outside top",side="top",showgrid=False)
+    fig.update_yaxes(title="Galactic Latitude (°)",range=[-90, 90],showgrid=False)
 
     return fig
 
@@ -193,7 +211,28 @@ app.layout = html.Div([
         ],
         style={
             'position': 'absolute',
-            'top': '237px',
+            'top': '122px',
+            'right': '55px',
+            'display': 'inline-flex',
+            'alignItems': 'center'
+        }
+    ),
+    html.Div(
+        [
+            html.Label(
+                "Show Background:",
+                style={'fontSize': '20px', 'margin-right': '10px'}
+            ),
+            dcc.Checklist(
+                id='show-bg-checkbox',
+                options=[{'label': '', 'value': 'show_bg'}],
+                value=[],
+                style={'display': 'inline-block'}
+            )
+        ],
+        style={
+            'position': 'absolute',
+            'top': '155px',
             'right': '55px',
             'display': 'inline-flex',
             'alignItems': 'center'
@@ -249,16 +288,25 @@ def download_csv_and_update_textbox(n_clicks, selected_data):
             p['customdata'][0],  # Main_ID
             p['customdata'][1],  # Spectral_Type
             p['customdata'][2],  # m_V
-            p['lat'],            # GAL_LAT
-            p['lon']             # GAL_LON
+            p['y'],            # GAL_LAT
+            p['x']             # GAL_LON
         ) for p in points
     ]
 
     if star_entries:
         star_entries.insert(0, ('MAIN_ID:', 'SP_TYPE:', 'm_V:', 'GAL_LAT:', 'GAL_LON:'))
 
+    html_vals = []
+    for row in star_entries:
+        strings = []
+        spacings = [35, 14, 12, 27, 0]
+        for j in range(len(row)):
+            strings.append(str(row[j])+(spacings[j]-len(str(row[j])))*' ')
+
+        html_vals.append(html.Span(f"{strings[0]}{strings[1]}{strings[2]}{strings[3]}{strings[4]}\n"))
+
     formatted_text = html.Div(
-        [html.Span(f"{row[0]:<25}{row[1]:>10}{row[2]:>18}{row[3]:>30}{row[4]:>30}\n") for row in star_entries],
+        html_vals,
         style={"whiteSpace": "pre-wrap", "fontFamily": "monospace"}
     )
 
@@ -285,7 +333,8 @@ def download_csv_and_update_textbox(n_clicks, selected_data):
 )
 def update_bottom_right_plot(clicked_data):
     """Update the bottom-right plot to show star spectra when a star is clicked."""
-    if clicked_data and 'points' in clicked_data:
+    if clicked_data and 'points' in clicked_data and 'customdata' in clicked_data['points'][0].keys():
+
         point = clicked_data['points'][0]
         star_name = point['customdata'][0]
 
@@ -381,19 +430,108 @@ def update_bottom_right_plot(clicked_data):
     }
 
 
+# @app.callback(
+#     Output('scatter-plot', 'figure'),
+#     Input('show-spectra-checkbox', 'value')
+# )
+# def update_scatter_plot(show_spectra_value):
+#     """Update the main scatter plot to filter stars that have available spectra if checkbox is selected."""
+#     if 'show' in show_spectra_value:
+#         filtered_data = plot_data[plot_data['Name'].isin(spectra_star_names)]
+#     else:
+#         filtered_data = plot_data
+
+#     updated_fig = create_scatter_figure(filtered_data)
+#     return updated_fig
+
 @app.callback(
     Output('scatter-plot', 'figure'),
-    Input('show-spectra-checkbox', 'value')
+    [Input('show-spectra-checkbox', 'value'),
+     Input('show-bg-checkbox', 'value')]
 )
-def update_scatter_plot(show_spectra_value):
-    """Update the main scatter plot to filter stars that have available spectra if checkbox is selected."""
+def update_scatter_plot_and_bg(show_spectra_value, show_bg_value):
+    """Update the scatter plot to filter stars and toggle background visibility."""
+    # Filter stars based on "Show Available Spectra"
     if 'show' in show_spectra_value:
         filtered_data = plot_data[plot_data['Name'].isin(spectra_star_names)]
     else:
         filtered_data = plot_data
 
-    updated_fig = create_scatter_figure(filtered_data)
-    return updated_fig
+    fig = go.Figure()
+    if 'show_bg' in show_bg_value:
+        arr = np.sin(np.linspace(-np.pi, np.pi, 180).reshape(-1, 1)) * \
+            np.cos(np.linspace(-np.pi, np.pi, 360))
+        lons = np.linspace(0, 360, 360)
+        lats = np.linspace(-90, 90, 180)
+        fig.add_trace(go.Heatmap(
+            x=lons,
+            y=lats,
+            z=arr,
+            colorscale='Viridis',
+            colorbar=dict(
+                orientation='h',
+                x=0.59,
+                xanchor='center',
+                y=-0.15,
+                ticklabelposition='outside bottom',
+                title=dict(
+                    text=r"H2 Integrated Emission (erg / s / cm^2 / arcsec^2)",
+                    side="bottom"
+                ),
+                len=0.5,
+                thickness=15
+            ),
+            hovertemplate='GAL_LAT: %{y}<br>GAL_LON: %{x}<br>Value: %{z}<extra></extra>'
+        ))
+
+    # Add scatter plot data
+    scatter_fig = px.scatter(
+        filtered_data,
+        x="Galactic Longitude",
+        y="Galactic Latitude",
+        color="Color",
+        size="Size",
+        custom_data=["Name", "Spectral Type", "Apparent Magnitude"],
+        color_discrete_map=color_map
+    )
+    for trace in scatter_fig.data:
+        fig.add_trace(trace)
+
+    for lat_line in range(-90, 91, 30):
+        fig.add_shape(type='line', xref='x', yref='y',
+                    x0=0, x1=360, y0=lat_line, y1=lat_line,
+                    line=dict(color='gray', width=0.5))
+    for lon_line in range(0, 361, 30):
+        fig.add_shape(type='line', xref='x', yref='y',
+                    x0=lon_line, x1=lon_line, y0=-90, y1=90,
+                    line=dict(color='gray', width=0.5))
+
+    # Update figure layout
+    fig.update_traces(
+        marker=dict(line=dict(width=0)),
+        hovertemplate=(
+            "Main_ID: %{customdata[0]}<br>"
+            "SP_TYPE: %{customdata[1]}<br>"
+            "m_V: %{customdata[2]:.2f}<br>"
+            "GAL_LAT: %{y:.4f}<br>"
+            "GAL_LON: %{x:.4f}<extra></extra>"
+        ),
+        selector=dict(type='scatter')
+    )
+    fig.update_xaxes(title="Galactic Longitude (°)", range=[0, 360], ticklabelposition="outside top", side="top", showgrid=False)
+    fig.update_yaxes(title="Galactic Latitude (°)", range=[-90, 90], showgrid=False)
+    fig.update_layout(
+        title="SiMBAD OB Stars Visualizer",
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        legend_title=dict(text="Spectral Type"),
+        legend=dict(font=dict(size=20), x=1.03, y=1, xanchor="left", yanchor="top"),
+        autosize=False,
+        width=1175,
+        height=650
+    )
+
+    return fig
 
 
 @app.callback(
@@ -402,12 +540,12 @@ def update_scatter_plot(show_spectra_value):
 )
 def update_clicked_star_info(clicked_data):
     """Update the info panel with details of the clicked star."""
-    if clicked_data and 'points' in clicked_data:
+    if clicked_data and 'points' in clicked_data and 'customdata' in clicked_data['points'][0].keys():
         point = clicked_data['points'][0]
         sp_type = point['customdata'][1]
         m_v = point['customdata'][2]
-        gal_lat = point['lat']
-        gal_lon = point['lon']
+        gal_lat = point['y']
+        gal_lon = point['x']
         return html.Div(
             style={
                 'display': 'grid',
@@ -428,12 +566,12 @@ def update_clicked_star_info(clicked_data):
         )
     return "Click on a star to see details here."
 
-if not args.local:
-    port = int(os.environ.get("PORT", 8050))
-
 # ==================================================
 # Main
 # ==================================================
+if not args.local:
+    port = int(os.environ.get("PORT", 8050))
+
 if __name__ == '__main__':
 
     if args.local:
