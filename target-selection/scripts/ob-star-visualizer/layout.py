@@ -268,7 +268,7 @@ def default_layout():
             dcc.Store(id="show-bg-checkbox-store", data=[]),
             dcc.Store(id="norm-spectra-checkbox-store", data=[]),
             dcc.Store(id="show-cont-checkbox-store", data=[]),
-            # dcc.Store(id="scatter-store", data=None),
+            dcc.Store(id="scatter-store", data=None),
             # dcc.Store(id="clicked-star-store", data=None),
 
             dcc.Store(id="layout-store", data="main"),
