@@ -1,11 +1,11 @@
-from dash import Output, Input, State, ctx, html, no_update
+from dash import Output, Input, ctx, html
 from astropy.modeling import models, fitting
 import plotly.graph_objs as go
 import numpy as np
-import dash
 import io
 import os
 
+from layout import main_layout, alt_layout
 from data import scatter_fig, SPECTRA_DIR, nighttime_frac
 
 # ==================================================
@@ -13,6 +13,27 @@ from data import scatter_fig, SPECTRA_DIR, nighttime_frac
 # ==================================================
 
 def register_callbacks(app):
+
+    ### LAYOUT RENDERING
+    @app.callback(
+        Output("layout-store", "data"),
+        [Input("switch-to-alt-btn", "n_clicks"),
+         Input("switch-to-main-btn", "n_clicks")]
+    )
+    def toggle_layout(switch_to_alt, switch_to_main):
+        if ctx.triggered_id == "switch-to-alt-btn":
+            return "alt"
+        return "main"
+
+    @app.callback(
+        Output("dynamic-layout", "children"),
+        Input("layout-store", "data"),
+        prevent_initial_call=True
+    )
+    def render_layout(layout_store):
+        if layout_store == "alt":
+            return alt_layout()
+        return main_layout()
 
     ### UPDATE PANELS
     @app.callback(

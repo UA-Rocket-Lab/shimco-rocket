@@ -213,6 +213,73 @@ def main_layout():
                     "height": "40px"
                 }
             ),
-            dcc.Download(id="download-csv")
+            dcc.Download(id="download-csv"),
+        
+            ### SPECTRAL FITTING LAYOUT 
+            html.Button(
+                "Spectral Fitting View",
+                id="switch-to-alt-btn",
+                style={
+                    "position": "absolute",
+                    "top": "20px",
+                    "right": "20px",
+                    "width": "250px",
+                    "height": "50px",
+                    "fontSize": "18px",
+                    "fontFamily": 'Arial',
+                }
+            ),
+
+            ### HIDDEN COMPONENTS
+            html.Button(id="switch-to-main-btn", style={"display": "none"})
+
+        ]
+    )
+
+def alt_layout():
+    return html.Div(
+        id="alt-container",
+        children=[
+            
+            ### EXPLORATORY LAYOUT
+            html.Button(
+                "Exploratory View",
+                id="switch-to-main-btn",
+                style={
+                    "position": "absolute",
+                    "top": "20px",
+                    "right": "20px",
+                    "width": "250px",
+                    "height": "50px",
+                    "fontSize": "18px",
+                    "fontFamily": 'Arial',
+                }
+            ),
+            
+            ### HIDDEN COMPONENTS
+            html.Button(id="scatter-plot", style={"display": "none"}),
+            html.Div([dcc.Checklist(id='show-spectra-checkbox')]),
+            html.Div([dcc.Checklist(id='show-bg-checkbox')]),
+            html.Div([dcc.Checklist(id='norm-spectra-checkbox')]),
+            html.Div([dcc.Checklist(id='show-cont-checkbox')]),
+            html.Button(id="switch-to-alt-btn", style={"display": "none"})
+        ]
+    )
+
+def default_layout():
+    return html.Div(
+        id="default-container",
+        children=[
+
+            dcc.Store(id="show-spectra-checkbox-store", data=[]),
+            dcc.Store(id="show-bg-checkbox-store", data=[]),
+            dcc.Store(id="norm-spectra-checkbox-store", data=[]),
+            dcc.Store(id="show-cont-checkbox-store", data=[]),
+            # dcc.Store(id="scatter-store", data=None),
+            # dcc.Store(id="clicked-star-store", data=None),
+
+            dcc.Store(id="layout-store", data="main"),
+            html.Div(id="dynamic-layout",
+                     children=main_layout())
         ]
     )

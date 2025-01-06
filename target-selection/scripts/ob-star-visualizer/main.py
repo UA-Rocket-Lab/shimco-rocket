@@ -1,7 +1,7 @@
-from layout import app, main_layout
+from layout import app, default_layout
 from callbacks import register_callbacks
 
-app.layout = main_layout()
+app.layout = default_layout()
 
 register_callbacks(app)
 
