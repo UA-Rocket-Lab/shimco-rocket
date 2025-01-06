@@ -314,25 +314,24 @@ def register_callbacks(app):
                            current_figure,
                            stored_figure):
 
-        fig_to_save = no_update
+        # the order of these four chunks doesn't seem logical but it is SUPER finicky. alter with caution
+    
+        fig_to_store = no_update
         if current_figure is not None:
             if current_figure["layout"]["xaxis"]["range"] != [0,360]:
-                fig_to_save = current_figure.copy()
+                fig_to_store = current_figure.copy()
                 stored_figure = current_figure.copy()
 
         if ctx.triggered_id == 'switch-to-alt-btn' and to_alt_click:
             return show_spectra, show_bg, norm_spectra, show_cont, \
                    no_update, no_update, no_update, no_update, \
-                   fig_to_save, no_update
+                   fig_to_store, no_update
 
+        fig_to_display = scatter_fig(show_spectra_store, show_bg_store)
         if stored_figure is not None:
-            xlims = stored_figure["layout"]["xaxis"]["range"]
-            ylims = stored_figure["layout"]["yaxis"]["range"]
-            fig_to_return = scatter_fig(show_spectra_store, show_bg_store, xlims, ylims)
-        else:
-            fig_to_return = scatter_fig(show_spectra_store, show_bg_store)
+            fig_to_display = scatter_fig(show_spectra_store, show_bg_store, stored_figure["layout"]["xaxis"]["range"], stored_figure["layout"]["yaxis"]["range"])
 
         return no_update, no_update, no_update, no_update, \
             show_spectra_store, show_bg_store, \
             norm_spectra_store, show_cont_store, \
-            fig_to_save, fig_to_return
+            fig_to_store, fig_to_display
