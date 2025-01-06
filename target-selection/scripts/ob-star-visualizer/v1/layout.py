@@ -206,7 +206,7 @@ def main_layout():
                 }
             ),
             dcc.Download(id="download-csv"),
-        
+
             ### SPECTRAL FITTING LAYOUT 
             html.Button(
                 "Spectral Fitting View",
@@ -263,15 +263,16 @@ def default_layout():
         id="default-container",
         children=[
 
-            dcc.Store(id='restored', data=True),
             dcc.Store(id="show-spectra-checkbox-store", data=[]),
             dcc.Store(id="show-bg-checkbox-store", data=[]),
             dcc.Store(id="norm-spectra-checkbox-store", data=[]),
             dcc.Store(id="show-cont-checkbox-store", data=[]),
-            # dcc.Store(id="scatter-store", data=None),
-            # dcc.Store(id="clicked-star-store", data=None),
+            dcc.Store(id="scatter-store", data=None),
+            dcc.Store(id="clicked-star-store", data=None),
 
             dcc.Store(id="layout-store", data="main"),
+            dcc.Store(id="just-reset", data=False), # used to prevent multiple rapid layout renders
+
             html.Div(id="dynamic-layout",
                      children=main_layout())
         ]

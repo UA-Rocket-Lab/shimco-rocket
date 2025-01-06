@@ -2,6 +2,7 @@ from dash import Output, Input, State, ctx, html, no_update
 from astropy.modeling import models, fitting
 import plotly.graph_objs as go
 import numpy as np
+import dash
 import io
 import os
 
@@ -12,8 +13,12 @@ from data import scatter_fig, SPECTRA_DIR, nighttime_frac
 # Callbacks
 # ==================================================
 
-def register_callbacks(app):
+# Restore the following:
+    # selected star (IUE spectra plot, visibility plot, star info)
+    # selected stars (textbox and selection)
 
+def register_callbacks(app):
+    
     ### LAYOUT RENDERING
     @app.callback(
         Output("layout-store", "data"),
@@ -262,56 +267,110 @@ def register_callbacks(app):
                     html.P(f"GAL_LON:   {star_data[3]:.4f}", style={"margin": "0"})
                 ])
 
-    ### UPDATE SCATTER
-    @app.callback(
-        Output("scatter-plot", "figure"),
-        [Input("show-spectra-checkbox", "value"),
-         Input("show-bg-checkbox", "value")]
-    )
-    def update_scatter(show_spectra_checkbox,
-                          show_bg_checkbox):
-
-        return scatter_fig(show_spectra_checkbox, show_bg_checkbox)
-    
-    ### DEBUGGING
+    ### STORE STATES
     @app.callback(
         [Output("show-spectra-checkbox-store", "data"),
          Output("show-bg-checkbox-store", "data"),
          Output("norm-spectra-checkbox-store", "data"),
-         Output("show-cont-checkbox-store", "data"),
+         Output("show-cont-checkbox-store", "data")],
+        [Input("show-spectra-checkbox", "value"),
+         Input("show-bg-checkbox", "value"),
+         Input("norm-spectra-checkbox", "value"),
+         Input("show-cont-checkbox", "value")]
+    )
+    def store_checkbox_states(show_spectra_checkbox,
+                              show_bg_checkbox,
+                              norm_spectra_checkbox,
+                              show_cont_checkbox):
+        return show_spectra_checkbox, show_bg_checkbox, norm_spectra_checkbox, show_cont_checkbox
+
+    @app.callback(
+        Output("scatter-store", "data"),
+        [Input("scatter-plot", "relayoutData"),
+         Input("switch-to-alt-btn", "n_clicks"),
+         Input("switch-to-main-btn", "n_clicks")],
+        [State("scatter-plot", "figure")]
+    )
+    def store_scatter_state(relayoutData, switch_to_alt, switch_to_main, cur_fig):
+
+        if relayoutData and "xaxis.range[1]" in relayoutData:
+            xlims = [relayoutData["xaxis.range[0]"], relayoutData["xaxis.range[1]"]]
+            ylims = [relayoutData["yaxis.range[0]"], relayoutData["yaxis.range[1]"]]
+        elif cur_fig:
+            xlims = cur_fig["layout"]["xaxis"]["range"]
+            ylims = cur_fig["layout"]["yaxis"]["range"]
+        else:
+            xlims = [0, 360]
+            ylims = [-90, 90]
+
+        # switch to alt
+        if ctx.triggered_id == "switch-to-alt-btn":
+
+            cur_fig["layout"]["xaxis"]["range"] = xlims
+            cur_fig["layout"]["yaxis"]["range"] = ylims
+            return cur_fig
+        
+        # switch to main
+        elif ctx.triggered_id == "switch-to-main-btn":
+            return no_update
+        
+        # zooming
+        else:
+            cur_fig["layout"]["xaxis"]["range"] = xlims
+            cur_fig["layout"]["yaxis"]["range"] = ylims
+            return cur_fig
+
+    @app.callback(
+            Output("clicked-star-store", "data"),
+            Input("scatter-plot", "clickData")
+        )
+    def store_clicked_star(clickData):
+        return clickData
+
+    ### RESTORE STATES
+    @app.callback(
+        [Output("just-reset", "data"),
+         Output("scatter-plot", "figure"),
          Output("show-spectra-checkbox", "value"),
          Output("show-bg-checkbox", "value"),
          Output("norm-spectra-checkbox", "value"),
          Output("show-cont-checkbox", "value")],
-        [Input("switch-to-alt-btn", "n_clicks"),
-         Input("switch-to-main-btn", "n_clicks")],
-        [State("show-spectra-checkbox", "value"),
-         State("show-bg-checkbox", "value"),
-         State("norm-spectra-checkbox", "value"),
-         State("show-cont-checkbox", "value"),
+        [Input("switch-to-main-btn", "n_clicks"),
+        Input("show-spectra-checkbox", "value"),
+        Input("show-bg-checkbox", "value"),
+        Input("norm-spectra-checkbox", "value"),
+        Input("show-cont-checkbox", "value")],
+        [State("just-reset", "data"),
+         State("scatter-store", "data"),
          State("show-spectra-checkbox-store", "data"),
          State("show-bg-checkbox-store", "data"),
          State("norm-spectra-checkbox-store", "data"),
-         State("show-cont-checkbox-store", "data"),],
-        prevent_initial_call=True
+         State("show-cont-checkbox-store", "data")]
     )
-    def update_checkboxes(to_alt_click,
-                          to_main_click,
-                          show_spectra,
-                          show_bg,
-                          norm_spectra,
-                          show_cont,
-                          show_spectra_store,
-                          show_bg_store,
-                          norm_spectra_store,
-                          show_cont_store):
+    def reset_main_layout(_,
+                          show_spectra_checkbox,
+                          show_bg_checkbox,
+                          norm_spectra_checkbox,
+                          show_cont_checkbox,
+                          just_reset,
+                          figure,
+                          show_spectra_checkbox_store,
+                          show_bg_checkbox_store,
+                          norm_spectra_checkbox_store,
+                          show_cont_checkbox_store):
 
-        if ctx.triggered_id == 'switch-to-alt-btn' and to_alt_click:
-            return (show_spectra, show_bg, norm_spectra, show_cont,
-                    no_update, no_update, no_update, no_update)
+        xlims = [0,360]
+        ylims = [-90,90]
+        if figure is not None:
+            xlims = figure["layout"]["xaxis"]["range"]
+            ylims = figure["layout"]["yaxis"]["range"]
+
+        if ctx.triggered_id == "switch-to-main-btn":
+            print('store',show_spectra_checkbox_store, show_bg_checkbox_store, norm_spectra_checkbox_store, show_cont_checkbox_store)
+            return False, scatter_fig(show_spectra_checkbox_store, show_bg_checkbox_store, xlims, ylims), show_spectra_checkbox_store, show_bg_checkbox_store, norm_spectra_checkbox_store, show_cont_checkbox_store
+        else:
+            print('cur',show_spectra_checkbox, show_bg_checkbox, norm_spectra_checkbox, show_cont_checkbox)
+            return False, scatter_fig(show_spectra_checkbox, show_bg_checkbox, xlims, ylims), dash.no_update, dash.no_update, dash.no_update, dash.no_update
         
-        return (no_update, no_update, no_update, no_update,
-                show_spectra_store, show_bg_store,
-                norm_spectra_store, show_cont_store)
-
-    
+# prints store (with correct values) and cur (with blank arrays) in rapid succession upon returning to main
+# 
