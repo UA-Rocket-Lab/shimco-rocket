@@ -261,19 +261,6 @@ def register_callbacks(app):
                     html.P(f"GAL_LAT:   {star_data[2]:.4f}", style={"margin": "0"}),
                     html.P(f"GAL_LON:   {star_data[3]:.4f}", style={"margin": "0"})
                 ])
-
-    # ### UPDATE SCATTER
-    # @app.callback(
-    #     Output("scatter-plot", "figure"),
-    #     [Input("show-spectra-checkbox", "value"),
-    #      Input("show-bg-checkbox", "value")],
-    #      prevent_initial_call=True
-    # )
-    # def update_scatter(show_spectra_checkbox,
-    #                       show_bg_checkbox):
-
-    #     print('re-rendering')
-    #     return scatter_fig(show_spectra_checkbox, show_bg_checkbox)
     
     ### RESTORING STATES
     @app.callback(
@@ -288,10 +275,10 @@ def register_callbacks(app):
          Output("scatter-store", "data"),
          Output("scatter-plot", "figure")],
         [Input("switch-to-alt-btn", "n_clicks"),
-         Input("switch-to-main-btn", "n_clicks")],
-        [State("show-spectra-checkbox", "value"),
-         State("show-bg-checkbox", "value"),
-         State("norm-spectra-checkbox", "value"),
+         Input("switch-to-main-btn", "n_clicks"),
+         Input("show-spectra-checkbox", "value"),
+         Input("show-bg-checkbox", "value")],
+        [State("norm-spectra-checkbox", "value"),
          State("show-cont-checkbox", "value"),
          State("show-spectra-checkbox-store", "data"),
          State("show-bg-checkbox-store", "data"),
@@ -301,37 +288,50 @@ def register_callbacks(app):
          State("scatter-store", "data")],
         prevent_initial_call=True
     )
-    def restore_checkboxes(to_alt_click,
-                           to_main_click,
-                           show_spectra,
-                           show_bg,
-                           norm_spectra,
-                           show_cont,
-                           show_spectra_store,
-                           show_bg_store,
-                           norm_spectra_store,
-                           show_cont_store,
-                           current_figure,
-                           stored_figure):
+    def restore_checkboxes_and_scatter(to_alt_click,
+                                       to_main_click,
+                                       show_spectra_checkbox,
+                                       show_bg_checkbox,
+                                       norm_spectra_checkbox,
+                                       show_cont_checkbox,
+                                       show_spectra_store,
+                                       show_bg_store,
+                                       norm_spectra_store,
+                                       show_cont_store,
+                                       current_figure,
+                                       stored_figure):
 
-        # the order of these four chunks doesn't seem logical but it is SUPER finicky. alter with caution
-    
+        # the order of these chunks doesn't seem logical but it is SUPER finicky. alter with caution
+
+        # Store figure if limits are updated to something meaningful
         fig_to_store = no_update
         if current_figure is not None:
             if current_figure["layout"]["xaxis"]["range"] != [0,360]:
-                fig_to_store = current_figure.copy()
-                stored_figure = current_figure.copy()
+                fig_to_store = current_figure
+                stored_figure = current_figure
 
+        # Use current show_spectra and show_bg checkbox values if updated
+        show_spectra = show_spectra_store
+        show_bg = show_bg_store
+        if show_spectra_checkbox or show_bg_checkbox:
+            show_spectra = show_spectra_checkbox
+            show_bg = show_bg_checkbox
+
+        ##############
+
+        # Store all values when switching to alt layout
         if ctx.triggered_id == 'switch-to-alt-btn' and to_alt_click:
-            return show_spectra, show_bg, norm_spectra, show_cont, \
-                   no_update, no_update, no_update, no_update, \
-                   fig_to_store, no_update
+            return show_spectra_checkbox, show_bg_checkbox, norm_spectra_checkbox, show_cont_checkbox, \
+                no_update, no_update, no_update, no_update, \
+                fig_to_store, no_update
 
-        fig_to_display = scatter_fig(show_spectra_store, show_bg_store)
+        # Use stored figure limits if they exist
+        fig_to_display = scatter_fig(show_spectra, show_bg)
         if stored_figure is not None:
-            fig_to_display = scatter_fig(show_spectra_store, show_bg_store, stored_figure["layout"]["xaxis"]["range"], stored_figure["layout"]["yaxis"]["range"])
+            fig_to_display = scatter_fig(show_spectra, show_bg, stored_figure["layout"]["xaxis"]["range"], stored_figure["layout"]["yaxis"]["range"])
 
+        # Handle all other cases
         return no_update, no_update, no_update, no_update, \
-            show_spectra_store, show_bg_store, \
+            show_spectra, show_bg, \
             norm_spectra_store, show_cont_store, \
             fig_to_store, fig_to_display
