@@ -217,21 +217,46 @@ def register_callbacks(app):
     
     @app.callback(
         [Output("nighttime-frac-plot", "figure"),
-         Output("clicked-star", "children")],
-        Input("scatter-plot", "clickData")
+         Output("clicked-star", "children"),
+         Output("clicked-star-store", "data")],
+        [Input("switch-to-main-btn", "n_clicks"),
+         Input("scatter-plot", "clickData")],
+         State("clicked-star-store", "data")
     )
-    def star_info(clickData):
+    def star_info(to_main_click,
+                  clickData,
+                  clicked_star_store):
 
-        if clickData is None or 'customdata' not in clickData['points'][0]:
+        restore = False
+        to_store = no_update
+        if ctx.triggered_id == 'scatter-plot' and clickData is not None:
+            to_store = clickData
+        elif clicked_star_store is not None:
+            restore = True
+
+        if not restore and (clickData is None or 'customdata' not in clickData['points'][0]):
+            
             return \
                 {
                     'layout': {
                         'xaxis': {'range': [-0.5, 5.5], 'visible': False},
-                        'yaxis': {'range': [-0.05, 1.05], 'visible': False},
+                        'yaxis': {'range': [-5, 105], 'visible': False},
                         'margin': {'l': 0, 'r': 0, 't': 0, 'b': 0}
                     }
                 }, \
-                "Click on a star to see its information"
+                "Click on a star to see its information", to_store
+        elif restore:
+
+            x = [0, 1, 2, 3, 4, 5]
+            y = nighttime_frac[np.where(nighttime_frac[:,0] == clicked_star_store['points'][0]['customdata'][0])[0][0],1:]
+
+            star_data = [
+                clicked_star_store['points'][0]['customdata'][1],
+                clicked_star_store['points'][0]['customdata'][2],
+                clicked_star_store['points'][0]['y'],
+                clicked_star_store['points'][0]['x'],
+            ]
+
         else:
 
             x = [0, 1, 2, 3, 4, 5]
@@ -244,23 +269,23 @@ def register_callbacks(app):
                 clickData['points'][0]['x'],
             ]
 
-            return \
-                {
-                    'data': [
-                        {'x': x, 'y': y, 'mode': 'lines+markers', 'line': {'color': 'blue'}, 'marker': {'size': 8}}
-                    ],
-                    'layout': {
-                        'xaxis': {'range': [-0.5, 5.5], 'visible': False},
-                        'yaxis': {'range': [-5, 105], 'visible': False},
-                        'margin': {'l': 0, 'r': 0, 't': 0, 'b': 0}
-                    }
-                }, \
-                html.Div([
-                    html.P(f"SP_TYPE:   {star_data[0]}", style={"margin": "0"}),
-                    html.P(f"m_V:       {star_data[1]:.2f}", style={"margin": "0"}),
-                    html.P(f"GAL_LAT:   {star_data[2]:.4f}", style={"margin": "0"}),
-                    html.P(f"GAL_LON:   {star_data[3]:.4f}", style={"margin": "0"})
-                ])
+        return \
+            {
+                'data': [
+                    {'x': x, 'y': y, 'mode': 'lines+markers', 'line': {'color': 'blue'}, 'marker': {'size': 8}}
+                ],
+                'layout': {
+                    'xaxis': {'range': [-0.5, 5.5], 'visible': False},
+                    'yaxis': {'range': [-5, 105], 'visible': False},
+                    'margin': {'l': 0, 'r': 0, 't': 0, 'b': 0}
+                }
+            }, \
+            html.Div([
+                html.P(f"SP_TYPE:   {star_data[0]}", style={"margin": "0"}),
+                html.P(f"m_V:       {star_data[1]:.2f}", style={"margin": "0"}),
+                html.P(f"GAL_LAT:   {star_data[2]:.4f}", style={"margin": "0"}),
+                html.P(f"GAL_LON:   {star_data[3]:.4f}", style={"margin": "0"})
+            ]), to_store
     
     ### RESTORING STATES
     @app.callback(

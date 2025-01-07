@@ -153,16 +153,16 @@ def main_layout():
             ),
             html.Div(
                 [
-                    html.Div("O", style={'position': 'absolute', 'bottom': '-155px', 'right': '267.5px'}),
-                    html.Div("N", style={'position': 'absolute', 'bottom': '-155px', 'right': '234.5px'}),
-                    html.Div("D", style={'position': 'absolute', 'bottom': '-155px', 'right': '201.5px'}),
-                    html.Div("J", style={'position': 'absolute', 'bottom': '-155px', 'right': '168.5px'}),
-                    html.Div("F", style={'position': 'absolute', 'bottom': '-155px', 'right': '135.5px'}),
-                    html.Div("M", style={'position': 'absolute', 'bottom': '-155px', 'right': '102.5px'}),
-                    html.Div("0%", style={'position': 'absolute', 'bottom': '-142px', 'right': '285px'}),
-                    html.Div("100%", style={'position': 'absolute', 'bottom': '-68px', 'right': '285px'}),
+                    html.Div("O", style={'position': 'absolute', 'bottom': '-185px', 'right': '282.5px'}),
+                    html.Div("N", style={'position': 'absolute', 'bottom': '-185px', 'right': '249.5px'}),
+                    html.Div("D", style={'position': 'absolute', 'bottom': '-185px', 'right': '216.5px'}),
+                    html.Div("J", style={'position': 'absolute', 'bottom': '-185px', 'right': '186.5px'}),
+                    html.Div("F", style={'position': 'absolute', 'bottom': '-185px', 'right': '153.5px'}),
+                    html.Div("M", style={'position': 'absolute', 'bottom': '-185px', 'right': '117.5px'}),
+                    html.Div("0%", style={'position': 'absolute', 'bottom': '-172px', 'right': '300px'}),
+                    html.Div("100%", style={'position': 'absolute', 'bottom': '-98px', 'right': '300px'}),
                 ],
-                style={'position': 'relative', 'width': '100%', 'height': '20px'}
+                style={'position': 'absolute', 'width': '100%', 'height': '20px'}
             ),
 
             ### STAR INFO TEXT
@@ -254,6 +254,8 @@ def alt_layout():
             html.Div([dcc.Checklist(id='show-bg-checkbox')]),
             html.Div([dcc.Checklist(id='norm-spectra-checkbox')]),
             html.Div([dcc.Checklist(id='show-cont-checkbox')]),
+            html.Div([dcc.Graph(id='nighttime-frac-plot', style={"display": "none"})]),
+            html.Div(id="clicked-star", style={"display": "none"}),
             html.Button(id="switch-to-alt-btn", style={"display": "none"})
         ]
     )
@@ -263,13 +265,12 @@ def default_layout():
         id="default-container",
         children=[
 
-            dcc.Store(id='restored', data=True),
             dcc.Store(id="show-spectra-checkbox-store", data=[]),
             dcc.Store(id="show-bg-checkbox-store", data=[]),
             dcc.Store(id="norm-spectra-checkbox-store", data=[]),
             dcc.Store(id="show-cont-checkbox-store", data=[]),
             dcc.Store(id="scatter-store", data=None),
-            # dcc.Store(id="clicked-star-store", data=None),
+            dcc.Store(id="clicked-star-store", data=None),
 
             dcc.Store(id="layout-store", data="main"),
             html.Div(id="dynamic-layout",
