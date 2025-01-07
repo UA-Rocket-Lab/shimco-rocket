@@ -153,14 +153,14 @@ def main_layout():
             ),
             html.Div(
                 [
-                    html.Div("O", style={'position': 'absolute', 'bottom': '-185px', 'right': '282.5px'}),
-                    html.Div("N", style={'position': 'absolute', 'bottom': '-185px', 'right': '249.5px'}),
-                    html.Div("D", style={'position': 'absolute', 'bottom': '-185px', 'right': '216.5px'}),
-                    html.Div("J", style={'position': 'absolute', 'bottom': '-185px', 'right': '186.5px'}),
-                    html.Div("F", style={'position': 'absolute', 'bottom': '-185px', 'right': '153.5px'}),
-                    html.Div("M", style={'position': 'absolute', 'bottom': '-185px', 'right': '117.5px'}),
-                    html.Div("0%", style={'position': 'absolute', 'bottom': '-172px', 'right': '300px'}),
-                    html.Div("100%", style={'position': 'absolute', 'bottom': '-98px', 'right': '300px'}),
+                    html.Div("O", style={'position': 'absolute', 'bottom': '-160px', 'right': '282.5px'}),
+                    html.Div("N", style={'position': 'absolute', 'bottom': '-160px', 'right': '249.5px'}),
+                    html.Div("D", style={'position': 'absolute', 'bottom': '-160px', 'right': '216.5px'}),
+                    html.Div("J", style={'position': 'absolute', 'bottom': '-160px', 'right': '186.5px'}),
+                    html.Div("F", style={'position': 'absolute', 'bottom': '-160px', 'right': '153.5px'}),
+                    html.Div("M", style={'position': 'absolute', 'bottom': '-160px', 'right': '117.5px'}),
+                    html.Div("0%", style={'position': 'absolute', 'bottom': '-147px', 'right': '300px'}),
+                    html.Div("100%", style={'position': 'absolute', 'bottom': '-73px', 'right': '300px'}),
                 ],
                 style={'position': 'absolute', 'width': '100%', 'height': '20px'}
             ),
@@ -212,13 +212,14 @@ def main_layout():
                 "Spectral Fitting View",
                 id="switch-to-alt-btn",
                 style={
-                    "position": "absolute",
-                    "top": "20px",
-                    "right": "20px",
-                    "width": "250px",
-                    "height": "50px",
-                    "fontSize": "18px",
-                    "fontFamily": 'Arial',
+                    "display": "none"
+                    # "position": "absolute",
+                    # "top": "20px",
+                    # "right": "20px",
+                    # "width": "250px",
+                    # "height": "50px",
+                    # "fontSize": "18px",
+                    # "fontFamily": 'Arial',
                 }
             ),
 
