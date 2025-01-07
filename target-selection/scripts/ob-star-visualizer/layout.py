@@ -256,6 +256,9 @@ def alt_layout():
             html.Div([dcc.Checklist(id='show-cont-checkbox')]),
             html.Div([dcc.Graph(id='nighttime-frac-plot', style={"display": "none"})]),
             html.Div(id="clicked-star", style={"display": "none"}),
+            html.Button(id="download-btn", style={"display": "none"}),
+            html.Div([dcc.Download(id='download-csv')]),
+            html.Div(id="selected-stars", style={"display": "none"}),
             html.Button(id="switch-to-alt-btn", style={"display": "none"})
         ]
     )
@@ -271,6 +274,7 @@ def default_layout():
             dcc.Store(id="show-cont-checkbox-store", data=[]),
             dcc.Store(id="scatter-store", data=None),
             dcc.Store(id="clicked-star-store", data=None),
+            dcc.Store(id="selected-stars-store", data=None),
 
             dcc.Store(id="layout-store", data="main"),
             html.Div(id="dynamic-layout",
