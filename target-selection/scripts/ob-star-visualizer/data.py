@@ -12,9 +12,10 @@ STAR_DATA_FILE = "../../ob_catalogue/ob_catalogue.csv"
 SPECTRA_DIR = "../../ob_catalogue/ob_catalogue_spectra/"
 
 # Generate model
-model_shape = (180, 360) # (lat, lon)
-model_data = np.sin(np.linspace(-np.pi, np.pi, model_shape[0]).reshape(-1, 1)) * \
-    np.cos(np.linspace(-np.pi, np.pi, model_shape[1]))
+# model_shape = (180, 360) # (lat, lon)
+# model_data = np.sin(np.linspace(-np.pi, np.pi, model_shape[0]).reshape(-1, 1)) * \
+#     np.cos(np.linspace(-np.pi, np.pi, model_shape[1]))
+model_data = np.genfromtxt('../../bp_integrated_h2.csv', delimiter=',', dtype='float')
 
 # Load star data (Main_ID, m_V, GAL_LON, GAL_LAT, SP_TYPE)
 raw_stars = np.genfromtxt(STAR_DATA_FILE, delimiter=',', dtype='str')
@@ -72,6 +73,8 @@ def scatter_fig(show_spectra=[], show_bg=[], xlims=[0,360], ylims=[-90,90]):
             x=lons,
             y=lats,
             z=model_data,
+            zmin=0,
+            zmax=5e5,
             colorscale='Viridis',
             colorbar=dict(
                 orientation='h',
