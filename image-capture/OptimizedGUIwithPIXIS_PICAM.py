@@ -20,7 +20,7 @@ matplotlib.use('Qt5Agg')
 plt.ioff() 
 
 # Initialize Camera
-from PIXIS_PICAM import *
+from PIXIS_PICAM_Initialization import *
 
 
 
