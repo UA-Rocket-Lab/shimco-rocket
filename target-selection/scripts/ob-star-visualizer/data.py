@@ -1,8 +1,12 @@
 import os
+import sys
+sys.path.append('..')
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
+
+from load_fims_spear_maps import integrated_h2_map
 
 # ==================================================
 # Constants and Data Loading
@@ -10,12 +14,6 @@ import plotly.graph_objs as go
 
 STAR_DATA_FILE = "../../ob_catalogue/ob_catalogue.csv"
 SPECTRA_DIR = "../../ob_catalogue/ob_catalogue_spectra/"
-
-# Generate model
-# model_shape = (180, 360) # (lat, lon)
-# model_data = np.sin(np.linspace(-np.pi, np.pi, model_shape[0]).reshape(-1, 1)) * \
-#     np.cos(np.linspace(-np.pi, np.pi, model_shape[1]))
-model_data = np.genfromtxt('../../bp_integrated_h2.csv', delimiter=',', dtype='float')
 
 # Load star data (Main_ID, m_V, GAL_LON, GAL_LAT, SP_TYPE)
 raw_stars = np.genfromtxt(STAR_DATA_FILE, delimiter=',', dtype='str')
@@ -67,12 +65,12 @@ def scatter_fig(show_spectra=[], show_bg=[], xlims=[0,360], ylims=[-90,90]):
     fig = go.Figure()
 
     if show_bg == [True]:
-        lons = np.linspace(0, 360, model_data.shape[1])
-        lats = np.linspace(-90, 90, model_data.shape[0])
+        lons = np.linspace(0, 360, integrated_h2_map.shape[1])
+        lats = np.linspace(-90, 90, integrated_h2_map.shape[0])
         fig.add_trace(go.Heatmap(
             x=lons,
             y=lats,
-            z=model_data,
+            z=integrated_h2_map,
             zmin=0,
             zmax=5e5,
             colorscale='Viridis',
@@ -139,7 +137,7 @@ def scatter_fig(show_spectra=[], show_bg=[], xlims=[0,360], ylims=[-90,90]):
                     line=dict(color='gray', width=0.5))
 
     fig.update_layout(
-        title="SiMBAD OB Stars Visualizer",
+        title="SiMBAD OB Star Visualizer",
         xaxis=dict(showgrid=False),
         yaxis=dict(showgrid=False),
         plot_bgcolor='white',

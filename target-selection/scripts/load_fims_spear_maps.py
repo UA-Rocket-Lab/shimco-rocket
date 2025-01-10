@@ -23,14 +23,14 @@ with fits.open(map_name) as hdul:
     crval = hdul[1].header['CRVAL1']
     cdelt = hdul[1].header['CDELT1']
     bins = len(fims_map['INTEN_BSUB'][0])
-    lwave = np.arange(0, bins)*cdelt+crval
+    h2_wavs = np.arange(0, bins)*cdelt+crval
 
-mask = ((lwave > 1395) & (lwave < 1405)) | ((lwave > 1605) & (lwave < 1615))
-integrated_map = np.sum(fims_map['INTEN_BSUB'][:,mask], axis=1)
+mask = ((h2_wavs > 1395) & (h2_wavs < 1405)) | ((h2_wavs > 1605) & (h2_wavs < 1615))
+integrated_h2_map = np.sum(fims_map['INTEN_BSUB'][:,mask], axis=1)
 
 #######################
 
-def get_healpy_map_value(lat, lon, map_array, coord_order='G'):
+def get_healpy_map_value(lat, lon, map_array, coord_order='G', dims=3):
     """
     Retrieves the value from a HEALPix map at the specified latitude and longitude.
 
@@ -47,7 +47,10 @@ def get_healpy_map_value(lat, lon, map_array, coord_order='G'):
     - ValueError: If the map length is not compatible with a valid nside.
     """
     # Calculate nside from the length of the map
-    npix = len(map_array)
+    if dims == 3:
+        npix = len(map_array[:,0])
+    else:
+        npix = len(map_array)
     nside_float = np.sqrt(npix / 12)
     nside = int(nside_float)
 
@@ -62,21 +65,32 @@ def get_healpy_map_value(lat, lon, map_array, coord_order='G'):
     pix = hp.ang2pix(nside, theta, phi, nest=False)
 
     # Return the map value at the pixel
-    return map_array[pix]
+    if dims == 3:
+        return map_array[pix,:]
+    else:
+        return map_array[pix]
 
-PIX_PER_DEG = 1
-regrid = np.zeros((PIX_PER_DEG*180,PIX_PER_DEG*360))
-lats = np.linspace(-90,90,regrid.shape[0])
-lons = np.linspace(0,360,regrid.shape[1])
-for lat in range(regrid.shape[0]):
-    for lon in range(regrid.shape[1]):
-        regrid[lat,lon] = get_healpy_map_value(lats[lat],lons[lon],integrated_map)
+def resample_3d_array(wavs, map_3d, pix_per_grid=1):
 
-hp.mollview(integrated_map, coord='G', max=5e5, unit='photon cm-2 s-1 sr-1', title='') # Galactic coordinates
-plt.show()
+    regrid = np.zeros((pix_per_grid*180,pix_per_grid*360,wavs.shape[0]))
+    lats = np.linspace(-90,90,regrid.shape[0])
+    lons = np.linspace(0,360,regrid.shape[1])
+    for lat in range(regrid.shape[0]):
+        for lon in range(regrid.shape[1]):
+            regrid[lat,lon,:] = get_healpy_map_value(lats[lat],lons[lon],map_3d)
 
-plt.imshow(regrid, vmin=-4900, vmax=5e5, origin='lower')
-plt.colorbar()
-plt.show()
+    return regrid
 
-np.savetxt('../bp_integrated_h2.csv', regrid, delimiter=',')
+def resample_2d_array(map_2d, pix_per_grid=1):
+
+    regrid = np.zeros((pix_per_grid*180,pix_per_grid*360))
+    lats = np.linspace(-90,90,regrid.shape[0])
+    lons = np.linspace(0,360,regrid.shape[1])
+    for lat in range(regrid.shape[0]):
+        for lon in range(regrid.shape[1]):
+            regrid[lat,lon] = get_healpy_map_value(lats[lat],lons[lon],map_2d,dims=2)
+
+    return regrid
+
+integrated_h2_map = resample_2d_array(integrated_h2_map)
+h2_emission_cube = resample_3d_array(h2_wavs, np.array(fims_map['INTEN_BSUB']))

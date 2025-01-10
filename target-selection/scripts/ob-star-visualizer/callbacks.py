@@ -4,9 +4,12 @@ import plotly.graph_objs as go
 import numpy as np
 import io
 import os
+import sys
+sys.path.append('..')
 
 from layout import main_layout, alt_layout
 from data import scatter_fig, SPECTRA_DIR, nighttime_frac
+from load_fims_spear_maps import h2_wavs, h2_emission_cube
 
 # ==================================================
 # Callbacks
@@ -103,6 +106,153 @@ def register_callbacks(app):
         return None, formatted_text, to_store
 
     @app.callback(
+        [Output("h2-spectra-plot-chan1", "figure"),
+         Output("h2-spectra-plot-chan2", "figure"),
+         Output("h2-spectra-plot-text", "children"),
+         Output("clicked-bg-store", "data")],
+        [Input("switch-to-main-btn", "n_clicks"),
+         Input("scatter-plot", "clickData")],
+         State("clicked-bg-store", "data")
+    )
+    def h2_emission_map(to_main_click,
+                        clickData,
+                        clicked_bg_store):
+
+        if ctx.triggered_id == 'scatter-plot' and clickData is not None and 'customdata' not in clickData['points'][0]:
+
+            lats = np.linspace(-90,90,h2_emission_cube.shape[0])
+            lons = np.linspace(0,360,h2_emission_cube.shape[1])
+            lat_idx = np.where(np.abs(lats - clickData['points'][0]['y']) == np.min(np.abs(lats - clickData['points'][0]['y'])))
+            lon_idx = np.where(np.abs(lons - clickData['points'][0]['x']) == np.min(np.abs(lons - clickData['points'][0]['x'])))
+
+            trace = [(
+                go.Scatter(
+                    x=h2_wavs,
+                    y=h2_emission_cube[lat_idx,lon_idx,:].flatten(),
+                    mode='lines',
+                    line_color='black',
+                    line_width=2,
+                    showlegend=False
+                )
+            )]
+
+            # Plot shaded regions
+            shaded_regions = [
+                [go.Scatter(
+                    x=[1395, 1405, 1405, 1395],
+                    y=[np.min(h2_emission_cube[lat_idx,lon_idx,:]), np.min(h2_emission_cube[lat_idx,lon_idx,:]), np.max(h2_emission_cube[lat_idx,lon_idx,:]), np.max(h2_emission_cube[lat_idx,lon_idx,:])],
+                    fill='toself',
+                    mode='none',
+                    showlegend=False,
+                    fillcolor='rgba(255, 200, 200, 0.5)'
+                )],
+                [go.Scatter(
+                    x=[1605, 1615, 1615, 1605],
+                    y=[np.min(h2_emission_cube[lat_idx,lon_idx,:]), np.min(h2_emission_cube[lat_idx,lon_idx,:]), np.max(h2_emission_cube[lat_idx,lon_idx,:]), np.max(h2_emission_cube[lat_idx,lon_idx,:])],
+                    fill='toself',
+                    mode='none',
+                    showlegend=False,
+                    fillcolor='rgba(200, 200, 255, 0.5)'
+                )]
+            ]
+
+            return \
+                {
+                    'data': trace + shaded_regions[0],
+                    'layout': {
+                        'xaxis': {'range': [1393, 1407], 'title': 'Wavelength (Å)'},
+                        # 'yaxis': {'showticklabels': False},
+                        'margin': {'l': 35, 'r': 10, 't': 35, 'b': 35},
+                    }
+                }, \
+                {
+                    'data': trace + shaded_regions[1],
+                    'layout': {
+                        'xaxis': {'range': [1603, 1617], 'title': 'Wavelength (Å)'},
+                        'yaxis': {'showticklabels': False},
+                        'margin': {'l': 0, 'r': 10, 't': 35, 'b': 35},
+                    }
+                }, \
+                html.Div(
+                    style={
+                        'fontFamily': 'Arial',
+                        'fontSize': '18px',
+                        'color': '#414141',
+                        'padding': '3px'
+                    },
+                    children=f"GAL_LAT: {int(100*clickData['points'][0]['y'])/100}° / GAL_LON: {int(100*clickData['points'][0]['x'])/100}°"
+                ), clickData
+
+        elif clicked_bg_store is not None and clickData is None:
+
+            lats = np.linspace(-90,90,h2_emission_cube.shape[0])
+            lons = np.linspace(0,360,h2_emission_cube.shape[1])
+            lat_idx = np.where(np.abs(lats - clicked_bg_store['points'][0]['y']) == np.min(np.abs(lats - clicked_bg_store['points'][0]['y'])))
+            lon_idx = np.where(np.abs(lons - clicked_bg_store['points'][0]['x']) == np.min(np.abs(lons - clicked_bg_store['points'][0]['x'])))
+
+            trace = [(
+                go.Scatter(
+                    x=h2_wavs,
+                    y=h2_emission_cube[lat_idx,lon_idx,:].flatten(),
+                    mode='lines',
+                    line_color='black',
+                    line_width=2,
+                    showlegend=False
+                )
+            )]
+
+            # Plot shaded regions
+            shaded_regions = [
+                [go.Scatter(
+                    x=[1395, 1405, 1405, 1395],
+                    y=[np.min(h2_emission_cube[lat_idx,lon_idx,:]), np.min(h2_emission_cube[lat_idx,lon_idx,:]), np.max(h2_emission_cube[lat_idx,lon_idx,:]), np.max(h2_emission_cube[lat_idx,lon_idx,:])],
+                    fill='toself',
+                    mode='none',
+                    showlegend=False,
+                    fillcolor='rgba(255, 200, 200, 0.5)'
+                )],
+                [go.Scatter(
+                    x=[1605, 1615, 1615, 1605],
+                    y=[np.min(h2_emission_cube[lat_idx,lon_idx,:]), np.min(h2_emission_cube[lat_idx,lon_idx,:]), np.max(h2_emission_cube[lat_idx,lon_idx,:]), np.max(h2_emission_cube[lat_idx,lon_idx,:])],
+                    fill='toself',
+                    mode='none',
+                    showlegend=False,
+                    fillcolor='rgba(200, 200, 255, 0.5)'
+                )]
+            ]
+
+            return \
+                {
+                    'data': trace + shaded_regions[0],
+                    'layout': {
+                        'xaxis': {'range': [1393, 1407], 'title': 'Wavelength (Å)'},
+                        # 'yaxis': {'showticklabels': False},
+                        'margin': {'l': 35, 'r': 10, 't': 35, 'b': 35},
+                    }
+                }, \
+                {
+                    'data': trace + shaded_regions[1],
+                    'layout': {
+                        'xaxis': {'range': [1603, 1617], 'title': 'Wavelength (Å)'},
+                        'yaxis': {'showticklabels': False},
+                        'margin': {'l': 0, 'r': 10, 't': 35, 'b': 35},
+                    }
+                }, \
+                html.Div(
+                    style={
+                        'fontFamily': 'Arial',
+                        'fontSize': '18px',
+                        'color': '#414141',
+                        'padding': '3px'
+                    },
+                    children=f"GAL_LAT: {int(100*clicked_bg_store['points'][0]['y'])/100}° / GAL_LON: {int(100*clicked_bg_store['points'][0]['x'])/100}°"
+                ), clicked_bg_store
+            
+        else:
+            return no_update, no_update, no_update, no_update
+
+
+    @app.callback(
         Output("IUE-spectra-plot", "figure"),
         [Input("switch-to-main-btn", "n_clicks"),
          Input("scatter-plot", "clickData"),
@@ -123,6 +273,8 @@ def register_callbacks(app):
         elif clickData and 'customdata' in clickData['points'][0]:
             star_name = clickData['points'][0]['customdata'][0].replace(' ', '_')
             
+        elif clickData and 'customdata' not in clickData['points'][0]:
+            return no_update
         else:
             return \
             {
@@ -244,7 +396,7 @@ def register_callbacks(app):
                     'title': 'IUE spectrum unavailable for this star'
                 }
             }
-    
+
     @app.callback(
         [Output("nighttime-frac-plot", "figure"),
          Output("clicked-star", "children"),
@@ -259,12 +411,15 @@ def register_callbacks(app):
 
         restore = False
         to_store = no_update
-        if ctx.triggered_id == 'scatter-plot' and clickData is not None:
+        if ctx.triggered_id == 'scatter-plot' and clickData is not None and 'customdata' in clickData['points'][0]:
             to_store = clickData
-        elif clicked_star_store is not None:
+        elif clicked_star_store is not None and clickData is None:
             restore = True
 
-        if not restore and (clickData is None or 'customdata' not in clickData['points'][0]):
+        if not restore and clickData is not None and 'customdata' not in clickData['points'][0]:
+            return no_update, no_update, to_store
+
+        elif not restore and (clickData is None):
             
             return \
                 {
@@ -275,9 +430,9 @@ def register_callbacks(app):
                     }
                 }, \
                 "Click on a star to see its information", to_store
+
         elif restore:
 
-            x = [0, 1, 2, 3, 4, 5]
             y = nighttime_frac[np.where(nighttime_frac[:,0] == clicked_star_store['points'][0]['customdata'][0])[0][0],1:]
 
             star_data = [
@@ -289,7 +444,6 @@ def register_callbacks(app):
 
         else:
 
-            x = [0, 1, 2, 3, 4, 5]
             y = nighttime_frac[np.where(nighttime_frac[:,0] == clickData['points'][0]['customdata'][0])[0][0],1:]
 
             star_data = [
@@ -299,6 +453,7 @@ def register_callbacks(app):
                 clickData['points'][0]['x'],
             ]
 
+        x = [0, 1, 2, 3, 4, 5]
         return \
             {
                 'data': [
