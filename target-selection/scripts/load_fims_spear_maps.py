@@ -6,27 +6,37 @@ import matplotlib.pyplot as plt
 from astropy.table import Table
 from astroquery.mast import Observations
 
-download_data = True
-map_name = 'mccm_fims-spear_fims-ap100-n064_sky-starless_long_v1.0_hp-map-hsi.fits.gz'
+download_data = False
 
 if download_data:
+    map_name = 'mccm_fims-spear_fims-ap100-n064_sky-starless_long_v1.0_hp-map-hsi.fits.gz'
     uri = 'mast:MCCM/fims-spear/fims/hp-map-hsi/'+map_name
     Observations.download_file(uri)
     file_highres = os.path.basename(uri)
+    
+    with fits.open(map_name) as hdul:
+        header = hdul[1].header
 
-######################
+    fims_map = Table.read(map_name, hdu=1).filled(np.nan)['INTEN_BSUB']
+    data = np.array(fims_map).astype(np.int32)
+    header = np.array([header['CRVAL1'], header['CDELT1']])
 
-fims_map = Table.read(map_name, 
-                    hdu=1).filled(np.nan)
+    np.savez_compressed('../fims-spear_map.npz', header=header, array=data)
+    os.remove(map_name)
 
-with fits.open(map_name) as hdul:
-    crval = hdul[1].header['CRVAL1']
-    cdelt = hdul[1].header['CDELT1']
-    bins = len(fims_map['INTEN_BSUB'][0])
-    h2_wavs = np.arange(0, bins)*cdelt+crval
+# ######################
+
+npz = np.load('../fims-spear_map.npz')
+header = npz['header']
+fims_map = npz['array']
+
+crval = header[0]
+cdelt = header[1]
+bins = len(fims_map[0])
+h2_wavs = np.arange(0, bins)*cdelt+crval
 
 mask = ((h2_wavs > 1395) & (h2_wavs < 1405)) | ((h2_wavs > 1605) & (h2_wavs < 1615))
-integrated_h2_map = np.sum(fims_map['INTEN_BSUB'][:,mask], axis=1)
+integrated_h2_map = np.sum(fims_map[:,mask], axis=1)
 
 #######################
 
@@ -93,4 +103,4 @@ def resample_2d_array(map_2d, pix_per_grid=1):
     return regrid
 
 integrated_h2_map = resample_2d_array(integrated_h2_map)
-h2_emission_cube = resample_3d_array(h2_wavs, np.array(fims_map['INTEN_BSUB']))
+h2_emission_cube = resample_3d_array(h2_wavs, np.array(fims_map))
