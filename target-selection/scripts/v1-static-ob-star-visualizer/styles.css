@@ -12,27 +12,31 @@ body {
 /* Control Panel */
 #control-panel {
     position: absolute;
-    top: 122px;
-    right: 55px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    top: 20px;          /* Adjusted to a smaller value for visibility */
+    right: 20px;        /* Adjusted to a smaller value for visibility */
+    width: 240px;       /* Defined width */
+    padding: 20px;      /* Added padding for better layout */
+    background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
+    border: 2px solid #333; /* Dark border for visibility */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
 }
 
 .checkbox-group {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 10px;
 }
 
 .checkbox-group label {
-    font-size: 20px;
+    font-size: 18px;
     color: #414141;
     margin-right: 10px;
 }
 
 /* Download Button */
-#download-btn {
+/* #download-btn {
     font-size: 18px;
     width: 150px;
     height: 40px;
@@ -40,42 +44,46 @@ body {
     position: absolute;
     bottom: 190px;
     right: 1270px;
-}
+} */
 
 /* Main Scatter Plot */
 #scatter-plot {
-    position: absolute; /* Positions relative to the nearest relative parent */
-    top: -20px;         /* Distance from the top of the parent */
-    left: 0px;        /* Distance from the right of the parent */
-    width: 70%;       /* Set the width of the scatter plot */
-    height: 600px;       /* Set the height of the scatter plot */
-    z-index: 1;         /* Ensures it sits above or below other elements */
+    position: absolute;
+    top: -20px;
+    left: -10px;
+    width: 1000px;
+    height: 535px;
 }
 #scatter-plot .modebar-container {
-    top: 30px !important; /* Position 10px from the bottom */
-    right: -385px !important;   /* Position 10px from the left */
+    top: 20px !important;
+    right: 200px !important;
 }
 
 /* H2 Spectra Plots */
 .spectra-plot {
     position: absolute;
-    top: 275px;
-    width: 250px;
-    height: 25%;
-    border: none;
-    background-color: white;
+    top: 165px;
+    right: 20px;
+    width: 500px;
+    height: 200px;
+    background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
+    border: 2px solid #333; /* Dark border for visibility */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
 }
 
 #h2-spectra-plot-chan1 {
-    right: 265px;
+    right: 275px;
+    width: 245px;
 }
 
 #h2-spectra-plot-chan2 {
-    right: 15px;
+    right: 20px;
+    width: 245px;
 }
 
 /* H2 Spectra Plot Text */
-#h2-spectra-plot-text {
+/* #h2-spectra-plot-text {
     position: absolute;
     top: 275px;
     right: 15px;
@@ -90,95 +98,95 @@ body {
     align-items: center;
     font-size: 18px;
     color: #414141;
-}
+} */
 
 /* IUE Spectra Plot */
-.spectrum-plot {
+#IUE-spectra-plot {
     position: absolute;
-    bottom: 125px;
-    right: 15px;
+    top: 387px;
+    right: 20px;
     width: 500px;
-    height: 25%;
-    border: 1px solid black;
-    background-color: white;
+    height: 200px;
+    background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
+    border: 2px solid #333; /* Dark border for visibility */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
 }
 
 /* Nighttime Fraction Plot */
 #nighttime-frac-plot {
     position: absolute;
-    bottom: 25px;
-    right: 100px;
-    width: 13%;
-    height: 10%;
-    border: none;
-    background-color: white;
+    top: 610px;
+    right: 50px;
+    width: 200px;
+    height: 100px;
+    background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
+    border: 2px solid #333; /* Dark border for visibility */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
 }
 
 /* Fraction Labels */
-.frac-labels {
+/* .frac-labels {
     position: absolute;
     bottom: 0;
     right: 15px;
     width: 500px;
     height: 20px;
-}
+} */
 
-.frac-label, .frac-label-percent {
+/* .frac-label, .frac-label-percent {
     position: absolute;
     font-family: Arial, sans-serif;
     font-size: 18px;
     color: #414141;
-}
+} */
 
-.frac-label {
+/* .frac-label {
     bottom: -160px;
-}
+} */
 
-.frac-label-percent {
+/* .frac-label-percent {
     font-size: 14px;
-}
+} */
 
-.frac-label-percent:first-child {
+/* .frac-label-percent:first-child {
     bottom: -147px;
-}
+} */
 
-.frac-label-percent:last-child {
+/* .frac-label-percent:last-child {
     bottom: -73px;
-}
+} */
 
 /* Clicked Star Information */
 #clicked-star {
     position: absolute;
-    bottom: 15px;
-    right: 360px;
-    width: 9%;
-    height: 11%;
-    padding: 0px;
-    background-color: white;
-    font-size: 14px;
-    font-family: Arial, sans-serif;
-    line-height: 1.5;
-    border: none;
+    top: 610px;
+    right: 290px;
+    width: 200px;
+    height: 100px;
+    background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
+    border: 2px solid #333; /* Dark border for visibility */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
 }
 
 /* Selected Stars Textbox */
 #selected-stars {
     position: absolute;
-    bottom: 15px;
-    right: 535px;
-    width: 885px;
-    height: 165px;
-    border: 1px solid black;
-    padding: 0px;
-    overflow-y: scroll;
-    background-color: white;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
+    top: 510px;
+    left: 20px;
+    width: 750px;
+    height: 200px;
+    background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
+    border: 2px solid #333; /* Dark border for visibility */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+    z-index: 1;
 }
 
 /* Additional Styles for Labels */
-#h2-spectra-plot-text p, #clicked-star p, #selected-stars p {
+/* #h2-spectra-plot-text p, #clicked-star p, #selected-stars p {
     margin: 0;
     padding: 2px 5px;
-}
+} */
