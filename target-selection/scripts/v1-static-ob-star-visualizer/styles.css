@@ -1,0 +1,184 @@
+/* styles.css */
+
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    background-color: white;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+/* Control Panel */
+#control-panel {
+    position: absolute;
+    top: 122px;
+    right: 55px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-group label {
+    font-size: 20px;
+    color: #414141;
+    margin-right: 10px;
+}
+
+/* Download Button */
+#download-btn {
+    font-size: 18px;
+    width: 150px;
+    height: 40px;
+    cursor: pointer;
+    position: absolute;
+    bottom: 190px;
+    right: 1270px;
+}
+
+/* Main Scatter Plot */
+#scatter-plot {
+    position: absolute; /* Positions relative to the nearest relative parent */
+    top: -20px;         /* Distance from the top of the parent */
+    left: 0px;        /* Distance from the right of the parent */
+    width: 70%;       /* Set the width of the scatter plot */
+    height: 600px;       /* Set the height of the scatter plot */
+    z-index: 1;         /* Ensures it sits above or below other elements */
+}
+#scatter-plot .modebar-container {
+    top: 30px !important; /* Position 10px from the bottom */
+    right: -385px !important;   /* Position 10px from the left */
+}
+
+/* H2 Spectra Plots */
+.spectra-plot {
+    position: absolute;
+    top: 275px;
+    width: 250px;
+    height: 25%;
+    border: none;
+    background-color: white;
+}
+
+#h2-spectra-plot-chan1 {
+    right: 265px;
+}
+
+#h2-spectra-plot-chan2 {
+    right: 15px;
+}
+
+/* H2 Spectra Plot Text */
+#h2-spectra-plot-text {
+    position: absolute;
+    top: 275px;
+    right: 15px;
+    width: 500px;
+    height: 25%;
+    border: 1px solid black;
+    background-color: rgba(0,0,0,0);
+    pointer-events: none;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    color: #414141;
+}
+
+/* IUE Spectra Plot */
+.spectrum-plot {
+    position: absolute;
+    bottom: 125px;
+    right: 15px;
+    width: 500px;
+    height: 25%;
+    border: 1px solid black;
+    background-color: white;
+}
+
+/* Nighttime Fraction Plot */
+#nighttime-frac-plot {
+    position: absolute;
+    bottom: 25px;
+    right: 100px;
+    width: 13%;
+    height: 10%;
+    border: none;
+    background-color: white;
+}
+
+/* Fraction Labels */
+.frac-labels {
+    position: absolute;
+    bottom: 0;
+    right: 15px;
+    width: 500px;
+    height: 20px;
+}
+
+.frac-label, .frac-label-percent {
+    position: absolute;
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    color: #414141;
+}
+
+.frac-label {
+    bottom: -160px;
+}
+
+.frac-label-percent {
+    font-size: 14px;
+}
+
+.frac-label-percent:first-child {
+    bottom: -147px;
+}
+
+.frac-label-percent:last-child {
+    bottom: -73px;
+}
+
+/* Clicked Star Information */
+#clicked-star {
+    position: absolute;
+    bottom: 15px;
+    right: 360px;
+    width: 9%;
+    height: 11%;
+    padding: 0px;
+    background-color: white;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
+    border: none;
+}
+
+/* Selected Stars Textbox */
+#selected-stars {
+    position: absolute;
+    bottom: 15px;
+    right: 535px;
+    width: 885px;
+    height: 165px;
+    border: 1px solid black;
+    padding: 0px;
+    overflow-y: scroll;
+    background-color: white;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Additional Styles for Labels */
+#h2-spectra-plot-text p, #clicked-star p, #selected-stars p {
+    margin: 0;
+    padding: 2px 5px;
+}
