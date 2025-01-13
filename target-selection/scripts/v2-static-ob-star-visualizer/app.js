@@ -4,6 +4,8 @@
 let plotData = [];
 let integratedH2Map = [];
 
+let currentSpectrumData = null;
+
 // Load Data
 async function loadData() {
     const plotResponse = await fetch('static/data/plot_data.json');
@@ -25,6 +27,7 @@ async function initializePlots() {
     // Get the checkboxes
     const spectraCheckbox = document.getElementById('show-spectra-checkbox');
     const bgCheckbox = document.getElementById('show-bg-checkbox');
+    const normCheckbox = document.getElementById('norm-spectra-checkbox');
 
     // Initial states
     const filterHasSpectra = spectraCheckbox ? spectraCheckbox.checked : false;
@@ -44,6 +47,15 @@ async function initializePlots() {
         bgCheckbox.addEventListener('change', function(e) {
             const isChecked = e.target.checked;
             plotStars(spectraCheckbox ? spectraCheckbox.checked : false, isChecked);
+        });
+    }
+
+    if (normCheckbox) {
+        normCheckbox.addEventListener('change', function(e) {
+            const isChecked = e.target.checked;
+            if (currentSpectrumData) {
+                plotSpectrum(currentSpectrumData, isChecked);
+            }
         });
     }
 
@@ -259,59 +271,91 @@ async function handlePlotClick(data) {
                         if (!response.ok) throw new Error('Spectrum data not found.');
 
                         const spectrumData = await response.json();
+                        currentSpectrumData = spectrumData; // Store current spectrum
 
-                        let traces = [];
-                        if (spectrumData['wavelength'].length != 495) {
-                            for (let i = 0; i < spectrumData['wavelength'].length; i++) {
-                                const trace = {
-                                    x: spectrumData['wavelength'][i],
-                                    y: spectrumData['flux'][i],
-                                    mode: 'lines',
-                                    type: 'scatter',
-                                    line: { color: 'black' }
-                                };
-                                traces.push(trace);
-                            }
-                        } else {
-                            traces.push({
-                                x: spectrumData['wavelength'],
-                                y: spectrumData['flux'],
-                                mode: 'lines',
-                                type: 'scatter',
-                                line: { color: 'black' }
-                            });
-                        }
+                        // Check normalization checkbox state
+                        const normCheckbox = document.getElementById('norm-spectra-checkbox');
+                        const normalize = normCheckbox ? normCheckbox.checked : false;
 
-                        Plotly.newPlot(
-                            'IUE-spectra-plot',
-                            traces,
-                            {
-                                xaxis: { title: 'Wavelength (Å)' },
-                                yaxis: { title: 'Specific Flux Density' , showticklabels: false},
-                                margin: {
-                                    l: 40,
-                                    r: 10,
-                                    t: 10,
-                                    b: 40
-                                },
-                                showlegend: false
-                            },
-                            { responsive: true }
-                        );
+                        plotSpectrum(spectrumData, normalize);
                     } catch (error) {
                         console.error(error);
-                        document.getElementById('IUE-spectra-plot').innerHTML = 'IUE Spectrum not available.';
+                        displaySpectraMessage("No IUE spectrum available for this star.");
+                        currentSpectrumData = null; // Clear current spectrum
                     }
                 } else {
-                    document.getElementById('IUE-spectra-plot').innerHTML = `
-                        <div class="iue-spectrum-message">
-                            No IUE spectrum available for this star
-                        </div>
-                    `;
+                    displaySpectraMessage("No IUE spectrum available for this star.");
+                    currentSpectrumData = null; // Clear current spectrum
                 }
             }
         }
     }
+}
+
+function plotSpectrum(spectrumData, normalize) {
+    let traces = [];
+
+    if (Array.isArray(spectrumData['wavelength'][0])) {
+        spectrumData['wavelength'].forEach((wavelength, index) => {
+            let flux = spectrumData['flux'][index];
+            if (normalize) {
+                flux = normalizeFlux(flux);
+            }
+            traces.push({
+                x: wavelength,
+                y: flux,
+                mode: 'lines',
+                type: 'scatter',
+                line: { color: 'black' },
+                name: `Spectrum ${index + 1}`
+            });
+        });
+    } else {
+        let flux = spectrumData['flux'];
+        if (normalize) {
+            flux = normalizeFlux(flux);
+        }
+        traces.push({
+            x: spectrumData['wavelength'],
+            y: flux,
+            mode: 'lines',
+            type: 'scatter',
+            line: { color: 'black' },
+            name: 'Spectrum'
+        });
+    }
+
+    const layout = {
+        xaxis: { title: 'Wavelength (Å)' },
+        yaxis: { 
+            title: 'Specific Flux Density', 
+            showticklabels: false 
+        },
+        margin: {
+            l: 40,
+            r: 10,
+            t: 10,
+            b: 40
+        },
+        showlegend: false
+    };
+
+    Plotly.react('IUE-spectra-plot', traces, layout, { responsive: true });
+}
+
+function normalizeFlux(flux) {
+    const sum = flux.reduce((acc, val) => acc + val, 0);
+    const mean = sum / flux.length;
+    
+    return flux.map(value => value / mean);
+}
+
+function displaySpectraMessage(message) {
+    document.getElementById('IUE-spectra-plot').innerHTML = `
+        <div class="iue-spectrum-message">
+            ${message}
+        </div>
+    `;
 }
 
 function init() {
