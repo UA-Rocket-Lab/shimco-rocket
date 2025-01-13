@@ -3,16 +3,14 @@
 // Global Variables
 let plotData = [];
 let integratedH2Map = [];
-let nighttimeFrac = [];
-let selectedStars = [];
-
-// Current Selected Star
-let currentSelectedStar = null;
 
 // Load Data
 async function loadData() {
     const plotResponse = await fetch('static/data/plot_data.json');
     plotData = await plotResponse.json();
+
+    const heatmapResponse = await fetch('static/data/integrated_h2_map.json');
+    integratedH2Map = await heatmapResponse.json();
 }
 
 // Initialize Plots Function
@@ -24,25 +22,46 @@ async function initializePlots() {
         return;
     }
 
-    // Get the checkbox element
-    const checkbox = document.getElementById('show-spectra-checkbox');
-    console.log("Checkbox element:", checkbox);
+    // Get the checkboxes
+    const spectraCheckbox = document.getElementById('show-spectra-checkbox');
+    const bgCheckbox = document.getElementById('show-bg-checkbox');
 
-    if (!checkbox) {
-        console.warn("Checkbox with id 'show-spectra' not found. No plot will be rendered.");
-        return; // Exit the function without plotting
+    // Initial states
+    const filterHasSpectra = spectraCheckbox ? spectraCheckbox.checked : false;
+    const showHeatmap = bgCheckbox ? bgCheckbox.checked : false;
+
+    plotStars(filterHasSpectra, showHeatmap);
+
+    // Add Event Listeners
+    if (spectraCheckbox) {
+        spectraCheckbox.addEventListener('change', function(e) {
+            const isChecked = e.target.checked;
+            plotStars(isChecked, bgCheckbox ? bgCheckbox.checked : false);
+        });
     }
 
-    const filterHasSpectra = checkbox.checked; // true if checkbox is checked
-    // console.log("Initial filter state:", filterHasSpectra);
-    plotStars(filterHasSpectra);
+    if (bgCheckbox) {
+        bgCheckbox.addEventListener('change', function(e) {
+            const isChecked = e.target.checked;
+            plotStars(spectraCheckbox ? spectraCheckbox.checked : false, isChecked);
+        });
+    }
 
-    // Add Event Listener to Checkbox
-    checkbox.addEventListener('change', function(e) {
-        const isChecked = e.target.checked;
-        // console.log("Checkbox state changed:", isChecked);
-        plotStars(isChecked); // Replot based on checkbox state
-    });
+    document.getElementById('IUE-spectra-plot').innerHTML = `
+        <div class="iue-spectrum-message">
+            Click on star to see its IUE spectrum
+        </div>
+    `;
+
+    document.getElementById('star-info').innerHTML = `
+        <div style="text-align: center;">
+            Click on a star to see its information
+        </div>
+    `;
+
+    // Add Plotly click event listener
+    const plotElement = document.getElementById('scatter-plot');
+    plotElement.on('plotly_click', handlePlotClick);
 }
 
 function generateTraces(filterHasSpectra) {
@@ -77,7 +96,9 @@ function generateTraces(filterHasSpectra) {
                 SpectralType: d["Spectral Type"],
                 ApparentMagnitude: d["Apparent Magnitude"].toFixed(2),
                 GAL_LAT: d["Galactic Latitude"].toFixed(2),
-                GAL_LON: d["Galactic Longitude"].toFixed(2)
+                GAL_LON: d["Galactic Longitude"].toFixed(2),
+                HasSpectra: d["HasSpectra"],
+                IUESpectra: d["IUESpectra"],
             })),
             mode: 'markers',
             marker: {
@@ -100,14 +121,18 @@ function generateTraces(filterHasSpectra) {
 }
 
 // Plotting Function
-function plotStars(filterHasSpectra = false) {
-
-    console.log("Checkbox state changed:", filterHasSpectra);
-
+function plotStars(filterHasSpectra = false, showHeatmap = false) {
+   
     const traces = generateTraces(filterHasSpectra);
 
+    if (showHeatmap) {
+        const heatmapTrace = generateHeatmapTrace();
+        traces.unshift(heatmapTrace);
+
+    }
+
     const layout = {
-        hovermode: 'closest', // Ensures hover only activates on the closest point
+        hovermode: 'closest',
         xaxis: {
             title: 'Galactic Longitude (°)',
             range: [0, 360],
@@ -124,7 +149,7 @@ function plotStars(filterHasSpectra = false) {
         paper_bgcolor: 'white',
         legend: {
             title: {
-                text: 'Spectral Type',
+                text: 'Stars',
                 font: {
                     size: 22,
                     color: '#333333'
@@ -134,12 +159,12 @@ function plotStars(filterHasSpectra = false) {
                 size: 18,
                 color: '#000000'
             },
-            x: 1.1,
-            y: 1.1,
+            x: 1.07,
+            y: 1.07,
             xanchor: "left",
             yanchor: "top"
         },
-        shapes: generateGridLines() // Assuming you have this function defined
+        shapes: generateGridLines()
     };
 
     const config = {
@@ -152,14 +177,8 @@ function plotStars(filterHasSpectra = false) {
         ]
     };
 
-    // Render or Update Plotly Plot
-    if (document.getElementById('scatter-plot').data) {
-        // If plot already exists, update it
-        Plotly.react('scatter-plot', traces, layout, config);
-    } else {
-        // Initial plot
-        Plotly.newPlot('scatter-plot', traces, layout, config);
-    }
+    // Always use Plotly.react to update the plot
+    Plotly.react('scatter-plot', traces, layout, config);
 }
 
 // Generate Grid Lines for Plot
@@ -197,100 +216,106 @@ function generateGridLines() {
     return shapes;
 }
 
-// // Handle Checkbox Interactions
-// function setupCheckboxListeners() {
-//     // Show Spectra Checkbox
-//     document.getElementById('show-spectra-checkbox').addEventListener('change', function() {
-//         const showSpectra = this.checked;
-//         // Assuming 'HasSpectra' is a field in plotData indicating availability
-//         const filteredData = showSpectra ? plotData.filter(d => d["HasSpectra"]) : plotData;
+function generateHeatmapTrace() {
+    
+    console.log(integratedH2Map)
+    
+    return {
+        z: integratedH2Map.z,
+        x: integratedH2Map.x,
+        y: integratedH2Map.y,
+        type: 'heatmap',
+        colorscale: 'Viridis',
+        showscale: false,
+        zmin: 0,
+        zmax: 5e5,
+        hovertemplate:
+        'Value: %{z}<br>' +
+        'Galactic Latitude: %{y}°<br>' +
+        'Galactic Longitude: %{x}°<extra></extra>'
+    };
+}
 
-//         // // Update Scatter Trace
-//         // Plotly.restyle('scatter-plot', {
-//         //     x: [filteredData.map(d => d["Galactic Longitude"])],
-//         //     y: [filteredData.map(d => d["Galactic Latitude"])],
-//         //     text: [filteredData.map(d => d["Name"])],
-//         //     customdata: [filteredData.map(d => ({
-//         //         Name: d["Name"],
-//         //         SpectralType: d["Spectral Type"],
-//         //         ApparentMagnitude: d["Apparent Magnitude"],
-//         //         GAL_LAT: d["Galactic Latitude"],
-//         //         GAL_LON: d["Galactic Longitude"]
-//         //     }))],
-//         //     'marker.size': [filteredData.map(d => d["Size"])],
-//         //     'marker.color': [filteredData.map(d => d["Color"])]
-//         // }, [1]); // Scatter trace index is 1
+async function handlePlotClick(data) {
+    if (data.points.length > 0) {
+        const point = data.points[0];
 
-//         // Define color mapping for spectral types
-//         const spectralColors = {
-//             'O-type': '#1000FF',
-//             'B-type': '#FF0000'
-//         };
+        if (point.data.type === 'scatter') {
+            const starData = point.customdata;
 
-//         // Group plotData by Spectral Type
-//         const groupedData = filteredData.reduce((acc, star) => {
-//             const type = star["Color"];
-//             if (!acc[type]) {
-//                 acc[type] = [];
-//             }
-//             acc[type].push(star);
-//             return acc;
-//         }, {});
+            if (starData) {
+                // Update Clicked Star Info Box
+                const infoHtml = `
+                    <strong>Spectral Type:</strong> ${starData.SpectralType}<br>
+                    <strong>Apparent Magnitude:</strong> ${starData.ApparentMagnitude}<br>
+                    <strong>Galactic Latitude:</strong> ${starData.GAL_LAT}°<br>
+                    <strong>Galactic Longitude:</strong> ${starData.GAL_LON}°
+                `;
+                document.getElementById('star-info').innerHTML = infoHtml;
 
-//         // Prepare Scatter Plot Traces
-//         const scatterTraces = Object.keys(groupedData).map(type => {
-//             const stars = groupedData[type];
-//             return {
-//                 x: stars.map(d => d["Galactic Longitude"]),
-//                 y: stars.map(d => d["Galactic Latitude"]),
-//                 customdata: stars.map(d => ({
-//                     Name: d["Name"],
-//                     SpectralType: d["Spectral Type"],
-//                     ApparentMagnitude: d["Apparent Magnitude"].toFixed(2),
-//                     GAL_LAT: d["Galactic Latitude"].toFixed(2),
-//                     GAL_LON: d["Galactic Longitude"].toFixed(2)
-//                 })),
-//                 mode: 'markers',
-//                 marker: {
-//                     size: stars.map(d => d["Size"]),
-//                     color: spectralColors[type], // Assign color based on spectral type
-//                     line: { width: 0 }
-//                 },
-//                 name: `${type}`, // Legend entry
-//                 type: 'scatter',
-//                 hovertemplate:
-//                     `<b>%{customdata.Name}</b><br>` +
-//                     `Spectral Type: %{customdata.SpectralType}<br>` +
-//                     `Apparent Magnitude: %{customdata.ApparentMagnitude}<br>` +
-//                     `Galactic Latitude: %{customdata.GAL_LAT}°<br>` +
-//                     `Galactic Longitude: %{customdata.GAL_LON}°<extra></extra>`
-//             };
-//     });
+                if (starData.HasSpectra) {
+                    try {
+                        const response = await fetch(starData.IUESpectra);
+                        if (!response.ok) throw new Error('Spectrum data not found.');
 
-    // // Show Background Checkbox
-    // document.getElementById('show-bg-checkbox').addEventListener('change', function() {
-    //     const showBG = this.checked;
-    //     Plotly.restyle('scatter-plot', { visible: showBG }, [0]); // Heatmap trace index is 0
-    // });
+                        const spectrumData = await response.json();
 
-    // // Normalize Spectra Checkbox
-    // document.getElementById('norm-spectra-checkbox').addEventListener('change', function() {
-    //     if(currentSelectedStar) {
-    //         updateIUESpectraPlot(currentSelectedStar.Name);
-    //     }
-    // });
+                        let traces = [];
+                        if (spectrumData['wavelength'].length != 495) {
+                            for (let i = 0; i < spectrumData['wavelength'].length; i++) {
+                                const trace = {
+                                    x: spectrumData['wavelength'][i],
+                                    y: spectrumData['flux'][i],
+                                    mode: 'lines',
+                                    type: 'scatter',
+                                    line: { color: 'black' }
+                                };
+                                traces.push(trace);
+                            }
+                        } else {
+                            traces.push({
+                                x: spectrumData['wavelength'],
+                                y: spectrumData['flux'],
+                                mode: 'lines',
+                                type: 'scatter',
+                                line: { color: 'black' }
+                            });
+                        }
 
-    // // Show Continuum Fit Checkbox
-    // document.getElementById('show-cont-checkbox').addEventListener('change', function() {
-    //     if(currentSelectedStar) {
-    //         updateIUESpectraPlot(currentSelectedStar.Name);
-    //     }
-    // });
-// }
+                        Plotly.newPlot(
+                            'IUE-spectra-plot',
+                            traces,
+                            {
+                                xaxis: { title: 'Wavelength (Å)' },
+                                yaxis: { title: 'Specific Flux Density' , showticklabels: false},
+                                margin: {
+                                    l: 40,
+                                    r: 10,
+                                    t: 10,
+                                    b: 40
+                                },
+                                showlegend: false
+                            },
+                            { responsive: true }
+                        );
+                    } catch (error) {
+                        console.error(error);
+                        document.getElementById('IUE-spectra-plot').innerHTML = 'IUE Spectrum not available.';
+                    }
+                } else {
+                    document.getElementById('IUE-spectra-plot').innerHTML = `
+                        <div class="iue-spectrum-message">
+                            No IUE spectrum available for this star
+                        </div>
+                    `;
+                }
+            }
+        }
+    }
+}
 
 function init() {
     initializePlots();
-    // setupCheckboxListeners();
 }
 
 window.onload = init;

@@ -31,7 +31,6 @@ body {
 
 .checkbox-group label {
     font-size: 18px;
-    color: #414141;
     margin-right: 10px;
 }
 
@@ -49,13 +48,13 @@ body {
 /* Main Scatter Plot */
 #scatter-plot {
     position: absolute;
-    top: -20px;
-    left: -10px;
-    width: 1000px;
-    height: 535px;
+    top: -30px;
+    left: -20px;
+    width: 1010px;
+    height: 585px;
 }
 #scatter-plot .modebar-container {
-    top: 20px !important;
+    top: 30px !important;
     right: 200px !important;
 }
 
@@ -103,14 +102,15 @@ body {
 /* IUE Spectra Plot */
 #IUE-spectra-plot {
     position: absolute;
-    top: 387px;
+    top: 367px;
     right: 20px;
-    width: 500px;
-    height: 200px;
-    background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
-    border: 2px solid #333; /* Dark border for visibility */
-    border-radius: 8px; /* Rounded corners */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+    width: 510px;
+    height: 240px;
+}
+.iue-spectrum-message {
+    font-size: 16px;
+    text-align: center;
+    margin-top: 100px;
 }
 
 /* Nighttime Fraction Plot */
@@ -161,23 +161,26 @@ body {
 /* Clicked Star Information */
 #clicked-star {
     position: absolute;
-    top: 610px;
+    top: 595px;
     right: 290px;
     width: 200px;
     height: 100px;
-    background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
-    border: 2px solid #333; /* Dark border for visibility */
-    border-radius: 8px; /* Rounded corners */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+    display: flex;
+    align-items: center;
+    text-align: left;
+}
+#star-info {
+    font-size: 14px;
+    line-height: 1.65;
 }
 
 /* Selected Stars Textbox */
 #selected-stars {
     position: absolute;
-    top: 510px;
+    top: 530px;
     left: 20px;
     width: 750px;
-    height: 200px;
+    height: 180px;
     background-color: rgba(200, 200, 200, 0.8); /* Semi-transparent background */
     border: 2px solid #333; /* Dark border for visibility */
     border-radius: 8px; /* Rounded corners */
