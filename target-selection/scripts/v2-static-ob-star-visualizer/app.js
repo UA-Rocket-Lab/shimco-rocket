@@ -5,6 +5,7 @@ let plotData = [];
 let integratedH2Map = [];
 
 let currentSpectrumData = null;
+let currentContinuumData = null;
 
 // Load Data
 async function loadData() {
@@ -28,6 +29,7 @@ async function initializePlots() {
     const spectraCheckbox = document.getElementById('show-spectra-checkbox');
     const bgCheckbox = document.getElementById('show-bg-checkbox');
     const normCheckbox = document.getElementById('norm-spectra-checkbox');
+    const contCheckbox = document.getElementById('show-cont-checkbox');
 
     // Initial states
     const filterHasSpectra = spectraCheckbox ? spectraCheckbox.checked : false;
@@ -55,6 +57,26 @@ async function initializePlots() {
             const isChecked = e.target.checked;
             if (currentSpectrumData) {
                 plotSpectrum(currentSpectrumData, isChecked);
+            }
+        });
+    }
+
+    if (contCheckbox) {
+        contCheckbox.addEventListener('change', async function(e) {
+            const isChecked = e.target.checked;
+            if (currentSpectrumData) {
+                if (isChecked) {
+                    const continuumData = await loadContinuumData(currentSpectrumData.Name);
+                    if (continuumData) {
+                        currentContinuumData = continuumData;
+                        const normCheckbox = document.getElementById('normalize-spectra-checkbox');
+                        const normalize = normCheckbox ? normCheckbox.checked : false;
+                        plotSpectrum(currentSpectrumData, normalize, continuumData);
+                    }
+                } else {
+                    plotSpectrum(currentSpectrumData, normCheckbox ? normCheckbox.checked : false, null);
+                    currentContinuumData = null;
+                }
             }
         });
     }
@@ -193,11 +215,90 @@ function plotStars(filterHasSpectra = false, showHeatmap = false) {
     Plotly.react('scatter-plot', traces, layout, config);
 }
 
-// Generate Grid Lines for Plot
+function plotSpectrum(spectrumData, normalize, continuumData = null) {
+    let traces = [];
+
+    console.log(continuumData)
+
+    if (Array.isArray(spectrumData['wavelength'][0])) {
+        spectrumData['wavelength'].forEach((wavelength, index) => {
+            let flux = spectrumData['flux'][index];
+            if (normalize) {
+                flux = normalizeFlux(flux);
+            }
+            traces.push({
+                x: wavelength,
+                y: flux,
+                mode: 'lines',
+                type: 'scatter',
+                line: { color: 'black' },
+                name: `Spectrum ${index + 1}`
+            });
+        });
+    } else {
+        let flux = spectrumData['flux'];
+        if (normalize) {
+            flux = normalizeFlux(flux);
+        }
+        traces.push({
+            x: spectrumData['wavelength'],
+            y: flux,
+            mode: 'lines',
+            type: 'scatter',
+            line: { color: 'black' },
+            name: 'Spectrum'
+        });
+    }
+
+    if (continuumData) {
+
+        let avgFlux = continuumData['avg'].map(row => row[1]);
+        if (normalize) {
+            avgFlux = normalizeFlux(avgFlux);
+        }
+        traces.push({
+            x: continuumData['avg'].map(row => row[0]),
+            y: avgFlux,
+            mode: 'lines',
+            type: 'scatter',
+            line: { color: 'red', dash: 'solid' }
+        });
+
+        let contFlux = continuumData['cont'].map(row => row[1]);
+        if (normalize) {
+            contFlux = normalizeFlux(contFlux);
+        }
+        traces.push({
+            x: continuumData['cont'].map(row => row[0]),
+            y: contFlux,
+            mode: 'lines',
+            type: 'scatter',
+            line: { color: 'blue', dash: 'dash' }
+        });
+
+    }
+
+    const layout = {
+        xaxis: { title: 'Wavelength (Å)' },
+        yaxis: { 
+            title: 'Specific Flux Density', 
+            showticklabels: false 
+        },
+        margin: {
+            l: 40,
+            r: 10,
+            t: 10,
+            b: 40
+        },
+        showlegend: false
+    };
+
+    Plotly.react('IUE-spectra-plot', traces, layout, { responsive: true });
+}
+
 function generateGridLines() {
     const shapes = [];
 
-    // Latitude lines every 30 degrees
     for (let lat = -90; lat <= 90; lat += 30) {
         shapes.push({
             type: 'line',
@@ -211,7 +312,6 @@ function generateGridLines() {
         });
     }
 
-    // Longitude lines every 30 degrees
     for (let lon = 0; lon <= 360; lon += 30) {
         shapes.push({
             type: 'line',
@@ -256,7 +356,6 @@ async function handlePlotClick(data) {
             const starData = point.customdata;
 
             if (starData) {
-                // Update Clicked Star Info Box
                 const infoHtml = `
                     <strong>Spectral Type:</strong> ${starData.SpectralType}<br>
                     <strong>Apparent Magnitude:</strong> ${starData.ApparentMagnitude}<br>
@@ -277,76 +376,37 @@ async function handlePlotClick(data) {
                         const normCheckbox = document.getElementById('norm-spectra-checkbox');
                         const normalize = normCheckbox ? normCheckbox.checked : false;
 
-                        plotSpectrum(spectrumData, normalize);
+                        // Check show continuum checkbox state
+                        const contCheckbox = document.getElementById('show-cont-checkbox');
+                        const showContinuum = contCheckbox ? contCheckbox.checked : false;
+
+                        let continuumData = null;
+                        if (showContinuum) {
+                            continuumData = await loadContinuumData(starData.Name);
+                            currentContinuumData = continuumData;
+                        }
+
+                        plotSpectrum(spectrumData, normalize, continuumData);
                     } catch (error) {
                         console.error(error);
                         displaySpectraMessage("No IUE spectrum available for this star.");
-                        currentSpectrumData = null; // Clear current spectrum
+                        currentSpectrumData = null;
+                        currentContinuumData = null;
                     }
                 } else {
                     displaySpectraMessage("No IUE spectrum available for this star.");
-                    currentSpectrumData = null; // Clear current spectrum
+                    currentSpectrumData = null;
+                    currentContinuumData = null;
                 }
             }
         }
     }
 }
 
-function plotSpectrum(spectrumData, normalize) {
-    let traces = [];
-
-    if (Array.isArray(spectrumData['wavelength'][0])) {
-        spectrumData['wavelength'].forEach((wavelength, index) => {
-            let flux = spectrumData['flux'][index];
-            if (normalize) {
-                flux = normalizeFlux(flux);
-            }
-            traces.push({
-                x: wavelength,
-                y: flux,
-                mode: 'lines',
-                type: 'scatter',
-                line: { color: 'black' },
-                name: `Spectrum ${index + 1}`
-            });
-        });
-    } else {
-        let flux = spectrumData['flux'];
-        if (normalize) {
-            flux = normalizeFlux(flux);
-        }
-        traces.push({
-            x: spectrumData['wavelength'],
-            y: flux,
-            mode: 'lines',
-            type: 'scatter',
-            line: { color: 'black' },
-            name: 'Spectrum'
-        });
-    }
-
-    const layout = {
-        xaxis: { title: 'Wavelength (Å)' },
-        yaxis: { 
-            title: 'Specific Flux Density', 
-            showticklabels: false 
-        },
-        margin: {
-            l: 40,
-            r: 10,
-            t: 10,
-            b: 40
-        },
-        showlegend: false
-    };
-
-    Plotly.react('IUE-spectra-plot', traces, layout, { responsive: true });
-}
-
 function normalizeFlux(flux) {
     const sum = flux.reduce((acc, val) => acc + val, 0);
     const mean = sum / flux.length;
-    
+
     return flux.map(value => value / mean);
 }
 
@@ -356,6 +416,22 @@ function displaySpectraMessage(message) {
             ${message}
         </div>
     `;
+}
+
+async function loadContinuumData(starName) {
+
+    const fitsFilePath = `static/data/spectra/${starName.replace(/ /g, '_')}_fits.json`; // Adjust the path as needed
+
+    try {
+        const response = await fetch(fitsFilePath);
+        if (!response.ok) throw new Error('Continuum data not found.');
+        const fitsData = await response.json();
+        return fitsData;
+    } catch (error) {
+        console.error(error);
+        displaySpectraMessage("Continuum data not available for this star.");
+        return null;
+    }
 }
 
 function init() {
