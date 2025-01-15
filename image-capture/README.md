@@ -1,22 +1,40 @@
 # SHIMCOcamera
-camera
 
-Procedure for taking a picture (or 10)
-(1) plug power supply into camera
-(2) plug camera into computer
-(3) turn on power supply
-(4) open software
-(5) Change settings (easy to do on the GUI) and click APPLY
-(6) Go to processing tab and enable background subtraction + grab background if desired 
-(7) Set # of Frames, Set Filesplit to 1, TURN ON SAVING! 
-(8) Go back to camera settings and start acquisition
+## Procedure for Taking a Picture (or 10)
 
-OptimizedGUIwithPIXIS_PICAM.py is a GUI which can be connected to a PIXIS camera to take pictures.  OptimizedQthreadGUI.py is a demonstration GUI which can randomly generate "images" for testing out the GUI functionality outside from the lab. 
+1. Plug the power supply into the camera.  
+2. Plug the camera into the computer.  
+3. Turn on the power supply.  
+4. Open the software.  
+5. Change settings (easy to do on the GUI) and click **APPLY**.  
+6. Go to the **Processing** tab:  
+   - Enable **Background Subtraction**.  
+   - Grab a background if desired.  
+7. Set the following:  
+   - **# of Frames**  
+   - **Filesplit** to 1  
+   - **TURN ON SAVING!**  
+8. Go back to camera settings and start acquisition.
 
-The "visualizations" Jupyter Notebook, in the Image Analysis folder, contains several visualizations of Images taken by the Camera, some of which are works in progress.
+---
 
-The PIXIS_PICAM initialization file sets starting PIXIS camera parameters and imports necessary packages for working with it.
+## Tools and Resources
 
-The archive contains scrapped previous ideas that we still may find useful.
+- **OptimizedGUIwithPIXIS_PICAM.py**:  
+  A GUI for connecting to a PIXIS camera to take pictures.
 
-LAST UPDATED 1/8/25
+- **OptimizedQthreadGUI.py**:  
+  A demonstration GUI that can randomly generate "images" for testing GUI functionality outside the lab.
+
+- **Visualizations Jupyter Notebook** (in the **Image Analysis** folder):  
+  Contains several visualizations of images taken by the camera. Some visualizations are works in progress.
+
+- **PIXIS_PICAM Initialization File**:  
+  Sets initial PIXIS camera parameters and imports necessary packages.
+
+- **Archive**:  
+  Contains scrapped previous ideas that may still prove useful.
+
+---
+
+**Last Updated:** 1/8/25
